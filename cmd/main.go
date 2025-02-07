@@ -1,11 +1,11 @@
 package main
 
 import (
-	"OzonTestTask/internal/graphql"
-	"OzonTestTask/internal/repository"
-	"OzonTestTask/internal/service"
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/playground"
+	"github.com/ArtemSarafannikov/OzonTestTask/internal/graphql"
+	"github.com/ArtemSarafannikov/OzonTestTask/internal/repository"
+	"github.com/ArtemSarafannikov/OzonTestTask/internal/service"
 	"log"
 	"net/http"
 )
@@ -16,9 +16,6 @@ func main() {
 	repo := repository.NewInMemoryRepository()
 	postService := service.NewPostService(repo)
 
-	handler.New(graphql.NewExecutableSchema(graphql.Config{
-		Resolvers: &graphql.Resolver{PostService: postService},
-	}))
 	srv := handler.NewDefaultServer(graphql.NewExecutableSchema(graphql.Config{
 		Resolvers: &graphql.Resolver{
 			PostService: postService,

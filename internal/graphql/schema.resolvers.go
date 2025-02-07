@@ -7,48 +7,117 @@ package graphql
 //import (
 //	"context"
 //	"fmt"
+//
+//	"github.com/ArtemSarafannikov/OzonTestTask/internal/models"
 //)
 //
+//// Post is the resolver for the post field.
+//func (r *commentResolver) Post(ctx context.Context, obj *models.Comment) (*models.Post, error) {
+//	panic(fmt.Errorf("not implemented: Post - post"))
+//}
+//
+//// ParentComment is the resolver for the parentComment field.
+//func (r *commentResolver) ParentComment(ctx context.Context, obj *models.Comment) (*models.Comment, error) {
+//	panic(fmt.Errorf("not implemented: ParentComment - parentComment"))
+//}
+//
+//// Author is the resolver for the author field.
+//func (r *commentResolver) Author(ctx context.Context, obj *models.Comment) (*models.User, error) {
+//	panic(fmt.Errorf("not implemented: Author - author"))
+//}
+//
+//// CreatedAt is the resolver for the createdAt field.
+//func (r *commentResolver) CreatedAt(ctx context.Context, obj *models.Comment) (string, error) {
+//	panic(fmt.Errorf("not implemented: CreatedAt - createdAt"))
+//}
+//
+//// Replies is the resolver for the replies field.
+//func (r *commentResolver) Replies(ctx context.Context, obj *models.Comment, limit *int, offset *int) ([]*models.Comment, error) {
+//	panic(fmt.Errorf("not implemented: Replies - replies"))
+//}
+//
 //// CreatePost is the resolver for the createPost field.
-//func (r *mutationResolver) CreatePost(ctx context.Context, title string, content string, authorID string, allowComments *bool) (*Post, error) {
+//func (r *mutationResolver) CreatePost(ctx context.Context, title string, content string, authorID string, allowComments *bool) (*models.Post, error) {
 //	panic(fmt.Errorf("not implemented: CreatePost - createPost"))
 //}
 //
 //// CreateComment is the resolver for the createComment field.
-//func (r *mutationResolver) CreateComment(ctx context.Context, text string, postID string, authorID string, parentCommentID *string) (*Comment, error) {
+//func (r *mutationResolver) CreateComment(ctx context.Context, text string, postID string, authorID string, parentCommentID *string) (*models.Comment, error) {
 //	panic(fmt.Errorf("not implemented: CreateComment - createComment"))
 //}
 //
 //// EditPost is the resolver for the editPost field.
-//func (r *mutationResolver) EditPost(ctx context.Context, postID string, title *string, content *string, allowComments *bool) (*Post, error) {
+//func (r *mutationResolver) EditPost(ctx context.Context, postID string, title *string, content *string, allowComments *bool) (*models.Post, error) {
 //	panic(fmt.Errorf("not implemented: EditPost - editPost"))
 //}
 //
+//// Author is the resolver for the author field.
+//func (r *postResolver) Author(ctx context.Context, obj *models.Post) (*models.User, error) {
+//	panic(fmt.Errorf("not implemented: Author - author"))
+//}
+//
+//// EditedAt is the resolver for the editedAt field.
+//func (r *postResolver) EditedAt(ctx context.Context, obj *models.Post) (*string, error) {
+//	panic(fmt.Errorf("not implemented: EditedAt - editedAt"))
+//}
+//
+//// CreatedAt is the resolver for the createdAt field.
+//func (r *postResolver) CreatedAt(ctx context.Context, obj *models.Post) (string, error) {
+//	panic(fmt.Errorf("not implemented: CreatedAt - createdAt"))
+//}
+//
+//// Comments is the resolver for the comments field.
+//func (r *postResolver) Comments(ctx context.Context, obj *models.Post, limit *int, offset *int) ([]*models.Comment, error) {
+//	panic(fmt.Errorf("not implemented: Comments - comments"))
+//}
+//
 //// Posts is the resolver for the posts field.
-//func (r *queryResolver) Posts(ctx context.Context, authorID *string, limit *int, offset *int) ([]*Post, error) {
+//func (r *queryResolver) Posts(ctx context.Context, authorID *string, limit *int, offset *int) ([]*models.Post, error) {
 //	panic(fmt.Errorf("not implemented: Posts - posts"))
 //}
 //
 //// Post is the resolver for the post field.
-//func (r *queryResolver) Post(ctx context.Context, postID string) (*Post, error) {
+//func (r *queryResolver) Post(ctx context.Context, postID string) (*models.Post, error) {
 //	panic(fmt.Errorf("not implemented: Post - post"))
 //}
 //
 //// Comments is the resolver for the comments field.
-//func (r *queryResolver) Comments(ctx context.Context, postID string, authorID *string, limit *int, offset *int) ([]*Comment, error) {
+//func (r *queryResolver) Comments(ctx context.Context, postID string, authorID *string, limit *int, offset *int) ([]*models.Comment, error) {
 //	panic(fmt.Errorf("not implemented: Comments - comments"))
 //}
 //
 //// Comment is the resolver for the comment field.
-//func (r *queryResolver) Comment(ctx context.Context, commentID string) (*Comment, error) {
+//func (r *queryResolver) Comment(ctx context.Context, commentID string) (*models.Comment, error) {
 //	panic(fmt.Errorf("not implemented: Comment - comment"))
 //}
+//
+//// LastActivity is the resolver for the lastActivity field.
+//func (r *userResolver) LastActivity(ctx context.Context, obj *models.User) (string, error) {
+//	panic(fmt.Errorf("not implemented: LastActivity - lastActivity"))
+//}
+//
+//// CreatedAt is the resolver for the createdAt field.
+//func (r *userResolver) CreatedAt(ctx context.Context, obj *models.User) (string, error) {
+//	panic(fmt.Errorf("not implemented: CreatedAt - createdAt"))
+//}
+//
+//// Comment returns CommentResolver implementation.
+//func (r *Resolver) Comment() CommentResolver { return &commentResolver{r} }
 //
 //// Mutation returns MutationResolver implementation.
 //func (r *Resolver) Mutation() MutationResolver { return &mutationResolver{r} }
 //
+//// Post returns PostResolver implementation.
+//func (r *Resolver) Post() PostResolver { return &postResolver{r} }
+//
 //// Query returns QueryResolver implementation.
 //func (r *Resolver) Query() QueryResolver { return &queryResolver{r} }
 //
+//// User returns UserResolver implementation.
+//func (r *Resolver) User() UserResolver { return &userResolver{r} }
+//
+//type commentResolver struct{ *Resolver }
 //type mutationResolver struct{ *Resolver }
+//type postResolver struct{ *Resolver }
 //type queryResolver struct{ *Resolver }
+//type userResolver struct{ *Resolver }

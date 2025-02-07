@@ -1,8 +1,8 @@
 package repository
 
 import (
-	"OzonTestTask/internal/models"
 	"context"
+	"github.com/ArtemSarafannikov/OzonTestTask/internal/models"
 )
 
 type Repository interface {

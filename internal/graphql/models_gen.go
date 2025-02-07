@@ -2,36 +2,8 @@
 
 package graphql
 
-type Comment struct {
-	ID            string     `json:"id"`
-	Post          *Post      `json:"post"`
-	ParentComment *Comment   `json:"parentComment,omitempty"`
-	Author        *User      `json:"author"`
-	Text          string     `json:"text"`
-	CreatedAt     string     `json:"createdAt"`
-	Replies       []*Comment `json:"replies"`
-}
-
 type Mutation struct {
 }
 
-type Post struct {
-	ID            string     `json:"id"`
-	Author        *User      `json:"author"`
-	Title         string     `json:"title"`
-	Content       string     `json:"content"`
-	AllowComments bool       `json:"allowComments"`
-	EditedAt      *string    `json:"editedAt,omitempty"`
-	CreatedAt     string     `json:"createdAt"`
-	Comments      []*Comment `json:"comments"`
-}
-
 type Query struct {
-}
-
-type User struct {
-	ID           string `json:"id"`
-	Username     string `json:"username"`
-	LastActivity string `json:"lastActivity"`
-	CreatedAt    string `json:"createdAt"`
 }

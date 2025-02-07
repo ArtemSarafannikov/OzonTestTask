@@ -13,3 +13,11 @@ resolver:
   layout: follow-schema
   dir: internal/graphql
   package: graphql
+
+models:
+  Post:
+    model: github.com/ArtemSarafannikov/OzonTestTask/internal/models.Post
+  Comment:
+    model: github.com/ArtemSarafannikov/OzonTestTask/internal/models.Comment
+  User:
+    model: github.com/ArtemSarafannikov/OzonTestTask/internal/models.User

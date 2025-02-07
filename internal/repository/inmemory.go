@@ -1,8 +1,8 @@
 package repository
 
 import (
-	"OzonTestTask/internal/models"
 	"context"
+	"github.com/ArtemSarafannikov/OzonTestTask/internal/models"
 	"sync"
 	"time"
 )
@@ -25,6 +25,15 @@ func NewInMemoryRepository() *InMemoryRepository {
 		EditedAt:      &now,
 		CreatedAt:     time.Now(),
 	})
+	inm.posts.Store("2", &models.Post{
+		ID:            "2",
+		Title:         "Second Post",
+		Content:       "Test test test test",
+		AllowComments: false,
+		AuthorID:      "1",
+		EditedAt:      &now,
+		CreatedAt:     time.Now(),
+	})
 	return inm
 }
 
@@ -32,13 +41,13 @@ func (r *InMemoryRepository) GetPosts(ctx context.Context, limit, offset int) ([
 	var posts []*models.Post
 
 	counter := 0
-	end := offset + limit
+	last := offset + limit - 1
 	r.posts.Range(func(key, value interface{}) bool {
 		if counter >= offset {
 			post := value.(*models.Post)
 			posts = append(posts, post)
 		}
-		if counter >= end {
+		if counter >= last {
 			return false
 		}
 		counter++

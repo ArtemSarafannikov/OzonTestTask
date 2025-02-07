@@ -1,9 +1,9 @@
 package service
 
 import (
-	"OzonTestTask/internal/models"
-	"OzonTestTask/internal/repository"
 	"context"
+	"github.com/ArtemSarafannikov/OzonTestTask/internal/models"
+	"github.com/ArtemSarafannikov/OzonTestTask/internal/repository"
 )
 
 type PostService struct {

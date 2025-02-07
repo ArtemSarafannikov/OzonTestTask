@@ -1,4 +1,4 @@
-module OzonTestTask
+module github.com/ArtemSarafannikov/OzonTestTask
 
 go 1.23
 
