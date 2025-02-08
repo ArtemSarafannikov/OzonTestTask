@@ -3,7 +3,6 @@ package middleware
 import (
 	"context"
 	"fmt"
-	"github.com/ArtemSarafannikov/OzonTestTask/internal/graphql"
 	"github.com/ArtemSarafannikov/OzonTestTask/internal/utils"
 	"github.com/golang-jwt/jwt/v5"
 	"net/http"
@@ -25,7 +24,9 @@ func AuthMiddleware(next http.Handler) http.Handler {
 			})
 
 			if err == nil && token.Valid {
-				ctx = context.WithValue(ctx, graphql.UserIdCtxKey, token)
+				claims := token.Claims.(jwt.MapClaims)
+				sub := claims["sub"].(string)
+				ctx = context.WithValue(ctx, utils.UserIdCtxKey, sub)
 			}
 		}
 		next.ServeHTTP(w, r.WithContext(ctx))

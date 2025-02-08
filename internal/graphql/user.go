@@ -2,8 +2,8 @@ package graphql
 
 import (
 	"context"
-	"fmt"
 	"github.com/ArtemSarafannikov/OzonTestTask/internal/models"
+	"github.com/ArtemSarafannikov/OzonTestTask/internal/utils"
 )
 
 func (r *Resolver) User() UserResolver { return &userResolver{r} }
@@ -11,10 +11,12 @@ func (r *Resolver) User() UserResolver { return &userResolver{r} }
 type userResolver struct{ *Resolver }
 
 func (r *userResolver) LastActivity(ctx context.Context, obj *models.User) (string, error) {
-	panic(fmt.Errorf("not implemented: LastActivity - lastActivity"))
+	timeStr := utils.ConvertTimeToString(obj.LastActivity)
+	return timeStr, nil
 }
 
 // CreatedAt is the resolver for the createdAt field.
 func (r *userResolver) CreatedAt(ctx context.Context, obj *models.User) (string, error) {
-	panic(fmt.Errorf("not implemented: CreatedAt - createdAt"))
+	timeStr := utils.ConvertTimeToString(obj.CreatedAt)
+	return timeStr, nil
 }

@@ -2,8 +2,8 @@ package graphql
 
 import (
 	"context"
-	"fmt"
 	"github.com/ArtemSarafannikov/OzonTestTask/internal/models"
+	"github.com/ArtemSarafannikov/OzonTestTask/internal/utils"
 )
 
 func (r *Resolver) Comment() CommentResolver { return &commentResolver{r} }
@@ -11,25 +11,29 @@ func (r *Resolver) Comment() CommentResolver { return &commentResolver{r} }
 type commentResolver struct{ *Resolver }
 
 func (r *commentResolver) Post(ctx context.Context, obj *models.Comment) (*models.Post, error) {
-	panic(fmt.Errorf("not implemented: Post - post"))
+	return r.PostService.GetPostByID(ctx, obj.PostID)
 }
 
 // ParentComment is the resolver for the parentComment field.
 func (r *commentResolver) ParentComment(ctx context.Context, obj *models.Comment) (*models.Comment, error) {
-	panic(fmt.Errorf("not implemented: ParentComment - parentComment"))
+	if obj.ParentID == nil {
+		return nil, nil
+	}
+	return r.CommentService.GetCommentByID(ctx, *obj.ParentID)
 }
 
 // Author is the resolver for the author field.
 func (r *commentResolver) Author(ctx context.Context, obj *models.Comment) (*models.User, error) {
-	panic(fmt.Errorf("not implemented: Author - author"))
+	return r.UserService.GetUserByID(ctx, obj.AuthorID)
 }
 
 // CreatedAt is the resolver for the createdAt field.
 func (r *commentResolver) CreatedAt(ctx context.Context, obj *models.Comment) (string, error) {
-	panic(fmt.Errorf("not implemented: CreatedAt - createdAt"))
+	timeStr := utils.ConvertTimeToString(obj.CreatedAt)
+	return timeStr, nil
 }
 
 // Replies is the resolver for the replies field.
 func (r *commentResolver) Replies(ctx context.Context, obj *models.Comment, limit *int, offset *int) ([]*models.Comment, error) {
-	panic(fmt.Errorf("not implemented: Replies - replies"))
+	return r.CommentService.GetReplies(ctx, obj.ID, *limit, *offset)
 }

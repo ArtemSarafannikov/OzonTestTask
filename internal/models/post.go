@@ -9,7 +9,7 @@ type Post struct {
 	Title         string     `json:"title"`
 	Content       string     `json:"content"`
 	AllowComments bool       `json:"allow_comments"`
-	AuthorID      string     `json:"author_id"`
-	EditedAt      *time.Time `json:"edited_at"`
+	AuthorID      string     `json:"-"`
+	EditedAt      *time.Time `json:"edited_at,omitempty"`
 	CreatedAt     time.Time  `json:"created_at"`
 }

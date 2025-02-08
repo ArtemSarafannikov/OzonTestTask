@@ -2,7 +2,6 @@ package graphql
 
 import (
 	"context"
-	"fmt"
 	"github.com/ArtemSarafannikov/OzonTestTask/internal/models"
 	"github.com/ArtemSarafannikov/OzonTestTask/internal/utils"
 )
@@ -12,12 +11,12 @@ func (r *Resolver) Post() PostResolver { return &postResolver{r} }
 type postResolver struct{ *Resolver }
 
 func (r *postResolver) Author(ctx context.Context, obj *models.Post) (*models.User, error) {
-	panic(fmt.Errorf("not implemented: Author - author"))
+	return r.UserService.GetUserByID(ctx, obj.AuthorID)
 }
 
 // EditedAt is the resolver for the editedAt field.
 func (r *postResolver) EditedAt(ctx context.Context, obj *models.Post) (*string, error) {
-	if obj == nil {
+	if obj.EditedAt == nil {
 		return nil, nil
 	}
 	timeStr := utils.ConvertTimeToString(*obj.EditedAt)
@@ -32,5 +31,5 @@ func (r *postResolver) CreatedAt(ctx context.Context, obj *models.Post) (string,
 
 // Comments is the resolver for the comments field.
 func (r *postResolver) Comments(ctx context.Context, obj *models.Post, limit *int, offset *int) ([]*models.Comment, error) {
-	panic(fmt.Errorf("not implemented: Comments - comments"))
+	return r.CommentService.GetComments(ctx, obj.ID, *limit, *offset)
 }

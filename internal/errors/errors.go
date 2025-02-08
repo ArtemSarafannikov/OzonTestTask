@@ -7,8 +7,10 @@ var (
 	UnauthorizedError      = GenerateError("Authorize for this action")
 	InternalError          = GenerateError("Internal server error")
 	TooLongContentError    = GenerateError("Too long content")
-	UserNotFoundError      = GenerateError("User not found")
+	NotFoundError          = GenerateError("Not found")
 	InvalidCredentials     = GenerateError("Invalid credentials")
+	PermissionDeniedError  = GenerateError("Permission denied")
+	CommentNotInPostError  = GenerateError("Comment not in post")
 )
 
 func GenerateError(err string) error {
