@@ -37,18 +37,28 @@ package graphql
 //}
 //
 //// CreatePost is the resolver for the createPost field.
-//func (r *mutationResolver) CreatePost(ctx context.Context, title string, content string, authorID string, allowComments *bool) (*models.Post, error) {
+//func (r *mutationResolver) CreatePost(ctx context.Context, post CreatePostInput) (*models.Post, error) {
 //	panic(fmt.Errorf("not implemented: CreatePost - createPost"))
 //}
 //
+//// EditPost is the resolver for the editPost field.
+//func (r *mutationResolver) EditPost(ctx context.Context, newPost EditPostInput) (*models.Post, error) {
+//	panic(fmt.Errorf("not implemented: EditPost - editPost"))
+//}
+//
 //// CreateComment is the resolver for the createComment field.
-//func (r *mutationResolver) CreateComment(ctx context.Context, text string, postID string, authorID string, parentCommentID *string) (*models.Comment, error) {
+//func (r *mutationResolver) CreateComment(ctx context.Context, comment CreateCommentInput) (*models.Comment, error) {
 //	panic(fmt.Errorf("not implemented: CreateComment - createComment"))
 //}
 //
-//// EditPost is the resolver for the editPost field.
-//func (r *mutationResolver) EditPost(ctx context.Context, postID string, title *string, content *string, allowComments *bool) (*models.Post, error) {
-//	panic(fmt.Errorf("not implemented: EditPost - editPost"))
+//// Register is the resolver for the register field.
+//func (r *mutationResolver) Register(ctx context.Context, login string, password string) (*AuthPayload, error) {
+//	panic(fmt.Errorf("not implemented: Register - register"))
+//}
+//
+//// Login is the resolver for the login field.
+//func (r *mutationResolver) Login(ctx context.Context, login string, password string) (*AuthPayload, error) {
+//	panic(fmt.Errorf("not implemented: Login - login"))
 //}
 //
 //// Author is the resolver for the author field.

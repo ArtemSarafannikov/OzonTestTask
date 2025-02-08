@@ -2,15 +2,17 @@ package repository
 
 import (
 	"context"
+	"github.com/ArtemSarafannikov/OzonTestTask/internal/errors"
 	"github.com/ArtemSarafannikov/OzonTestTask/internal/models"
+	"github.com/ArtemSarafannikov/OzonTestTask/internal/utils"
 	"sync"
 	"time"
 )
 
 type InMemoryRepository struct {
-	users    sync.Map // map[string]*models.Post
-	posts    sync.Map // map[string]*models.Comment
-	comments sync.Map
+	users    sync.Map // map[string]*models.User
+	posts    sync.Map // map[string]*models.Post
+	comments sync.Map // map[string]*models.Comment
 }
 
 func NewInMemoryRepository() *InMemoryRepository {
@@ -54,4 +56,39 @@ func (r *InMemoryRepository) GetPosts(ctx context.Context, limit, offset int) ([
 		return true
 	})
 	return posts, nil
+}
+
+func (r *InMemoryRepository) CreateUser(ctx context.Context, user *models.User) (*models.User, error) {
+	if _, err := r.GetUserByLogin(ctx, user.Username); err == nil {
+		return nil, cstErrors.UserAlreadyExistsError
+	}
+
+	newId, err := utils.GenerateNewId()
+	if err != nil {
+		return nil, err
+	}
+
+	now := time.Now()
+
+	user.ID = newId
+	user.CreatedAt = now
+	user.LastActivity = now
+	r.users.Store(newId, user)
+	return user, nil
+}
+
+func (r *InMemoryRepository) GetUserByLogin(ctx context.Context, login string) (*models.User, error) {
+	user := &models.User{}
+	r.users.Range(func(key, value interface{}) bool {
+		userValue := value.(*models.User)
+		if userValue.Username == login {
+			user = userValue
+			return false
+		}
+		return true
+	})
+	if user.ID == "" {
+		return nil, cstErrors.UserNotFoundError
+	}
+	return user, nil
 }

@@ -14,7 +14,7 @@ type Comment {
     post: Post!
     parentComment: Comment
     author: User!
-    text: String! @length(max: 2000)
+    text: String!
     createdAt: Timestamp!
     replies(limit: Int = 3, offset: Int = 0): [Comment!]!
 }
@@ -26,6 +26,11 @@ type User {
     createdAt: Timestamp!
 }
 
+type AuthPayload {
+    token: String!
+    user: User!
+}
+
 type Query {
     posts(authorID: ID, limit: Int = 10, offset: Int = 0): [Post!]!
     post(postID: ID!): Post
@@ -33,12 +38,36 @@ type Query {
     comment(commentID: ID!): Comment
 }
 
+input CreatePostInput {
+    title: String!
+    content: String!
+    allowComments: Boolean = true
+}
+
+input CreateCommentInput {
+    text: String!
+    postID: ID!
+    parentCommentID: ID
+}
+
+input EditPostInput {
+    postID: ID!
+    title: String
+    content: String
+    allowComments: Boolean
+}
+
 type Mutation {
-    createPost(title: String!, content: String!, authorID: ID!, allowComments: Boolean = true): Post!
-    createComment(text: String!, postID: ID!, authorID: ID!, parentCommentID: ID): Comment!
-    editPost(postID: ID!, title: String, content: String, allowComments: Boolean): Post!
+    createPost(post: CreatePostInput!): Post! @isAuthenticated
+    editPost(newPost: EditPostInput!): Post! @isAuthenticated
+
+    createComment(comment: CreateCommentInput! @length(max: 2000)): Comment! @isAuthenticated
+
+    register(login: String!, password: String!): AuthPayload!
+    login(login: String!, password: String!): AuthPayload!
 }
 
 scalar Timestamp
 
-directive @length(max: Int!) on FIELD_DEFINITION
+directive @length(max: Int!) on ARGUMENT_DEFINITION
+directive @isAuthenticated on FIELD_DEFINITION
