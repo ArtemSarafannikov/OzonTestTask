@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/99designs/gqlgen/graphql/handler"
+	"github.com/99designs/gqlgen/graphql/handler/extension"
 	"github.com/99designs/gqlgen/graphql/playground"
 	"github.com/ArtemSarafannikov/OzonTestTask/internal/config"
 	"github.com/ArtemSarafannikov/OzonTestTask/internal/graphql"
@@ -51,28 +52,31 @@ func New(log *slog.Logger, config *config.Config) *App {
 	postService := service.NewPostService(repo)
 	userService := service.NewUserService(repo)
 	commentService := service.NewCommentService(repo)
+	pubSub := service.NewPubSub()
 
 	app := &App{
 		log:    log,
 		config: config,
 		server: server,
 	}
-	app.SetHandlers(repo, postService, userService, commentService)
+	app.SetupHandlers(repo, postService, userService, commentService, pubSub)
 	return app
 }
 
-func (a *App) SetHandlers(repo repository.Repository,
+func (a *App) SetupHandlers(repo repository.Repository,
 	postService *service.PostService,
 	userService *service.UserService,
-	commentService *service.CommentService) {
+	commentService *service.CommentService,
+	pubSub *service.PubSub) {
 
 	http.Handle("/", playground.Handler("GraphQL playground", "/query"))
 
-	rootHandler := middlewares.DataloaderMiddleware(repo,
-		handler.NewDefaultServer(
-			graphql.NewExecutableSchema(graphql.NewRootResolver(postService, userService, commentService)),
-		),
+	defaultServer := handler.NewDefaultServer(
+		graphql.NewExecutableSchema(graphql.NewRootResolver(postService, userService, commentService, pubSub)),
 	)
+	defaultServer.Use(extension.FixedComplexityLimit(100))
+	rootHandler := middlewares.DataloaderMiddleware(repo, defaultServer)
+
 	http.Handle("/query", middlewares.AuthMiddleware(rootHandler))
 }
 

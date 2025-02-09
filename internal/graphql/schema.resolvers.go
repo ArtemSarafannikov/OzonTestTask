@@ -101,6 +101,11 @@ package graphql
 //	panic(fmt.Errorf("not implemented: Comment - comment"))
 //}
 //
+//// NewCommentPost is the resolver for the newCommentPost field.
+//func (r *subscriptionResolver) NewCommentPost(ctx context.Context, postID string) (<-chan *models.Comment, error) {
+//	panic(fmt.Errorf("not implemented: NewCommentPost - newCommentPost"))
+//}
+//
 //// LastActivity is the resolver for the lastActivity field.
 //func (r *userResolver) LastActivity(ctx context.Context, obj *models.User) (string, error) {
 //	panic(fmt.Errorf("not implemented: LastActivity - lastActivity"))
@@ -123,6 +128,9 @@ package graphql
 //// Query returns QueryResolver implementation.
 //func (r *Resolver) Query() QueryResolver { return &queryResolver{r} }
 //
+//// Subscription returns SubscriptionResolver implementation.
+//func (r *Resolver) Subscription() SubscriptionResolver { return &subscriptionResolver{r} }
+//
 //// User returns UserResolver implementation.
 //func (r *Resolver) User() UserResolver { return &userResolver{r} }
 //
@@ -130,4 +138,5 @@ package graphql
 //type mutationResolver struct{ *Resolver }
 //type postResolver struct{ *Resolver }
 //type queryResolver struct{ *Resolver }
+//type subscriptionResolver struct{ *Resolver }
 //type userResolver struct{ *Resolver }

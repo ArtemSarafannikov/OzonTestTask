@@ -61,13 +61,16 @@ type Mutation {
     createPost(post: CreatePostInput!): Post! @isAuthenticated
     editPost(newPost: EditPostInput!): Post! @isAuthenticated
 
-    createComment(comment: CreateCommentInput! @length(max: 2000)): Comment! @isAuthenticated
+    createComment(comment: CreateCommentInput!): Comment! @isAuthenticated
 
     register(login: String!, password: String!): AuthPayload!
     login(login: String!, password: String!): AuthPayload!
 }
 
+type Subscription {
+    newCommentPost(postID: String!): Comment!
+}
+
 scalar Timestamp
 
-directive @length(max: Int!) on ARGUMENT_DEFINITION
 directive @isAuthenticated on FIELD_DEFINITION

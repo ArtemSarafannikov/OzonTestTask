@@ -8,6 +8,7 @@ import (
 	"embed"
 	"errors"
 	"fmt"
+	"io"
 	"strconv"
 	"sync"
 	"sync/atomic"
@@ -43,12 +44,12 @@ type ResolverRoot interface {
 	Mutation() MutationResolver
 	Post() PostResolver
 	Query() QueryResolver
+	Subscription() SubscriptionResolver
 	User() UserResolver
 }
 
 type DirectiveRoot struct {
 	IsAuthenticated func(ctx context.Context, obj any, next graphql.Resolver) (res any, err error)
-	Length          func(ctx context.Context, obj any, next graphql.Resolver, max int) (res any, err error)
 }
 
 type ComplexityRoot struct {
@@ -93,6 +94,10 @@ type ComplexityRoot struct {
 		Posts    func(childComplexity int, authorID *string, limit *int, offset *int) int
 	}
 
+	Subscription struct {
+		NewCommentPost func(childComplexity int, postID string) int
+	}
+
 	User struct {
 		CreatedAt    func(childComplexity int) int
 		ID           func(childComplexity int) int
@@ -128,6 +133,9 @@ type QueryResolver interface {
 	Post(ctx context.Context, postID string) (*models.Post, error)
 	Comments(ctx context.Context, postID string, authorID *string, limit *int, offset *int) ([]*models.Comment, error)
 	Comment(ctx context.Context, commentID string) (*models.Comment, error)
+}
+type SubscriptionResolver interface {
+	NewCommentPost(ctx context.Context, postID string) (<-chan *models.Comment, error)
 }
 type UserResolver interface {
 	LastActivity(ctx context.Context, obj *models.User) (string, error)
@@ -390,6 +398,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Query.Posts(childComplexity, args["authorID"].(*string), args["limit"].(*int), args["offset"].(*int)), true
 
+	case "Subscription.newCommentPost":
+		if e.complexity.Subscription.NewCommentPost == nil {
+			break
+		}
+
+		args, err := ec.field_Subscription_newCommentPost_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Subscription.NewCommentPost(childComplexity, args["postID"].(string)), true
+
 	case "User.createdAt":
 		if e.complexity.User.CreatedAt == nil {
 			break
@@ -478,6 +498,23 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 				Data: buf.Bytes(),
 			}
 		}
+	case ast.Subscription:
+		next := ec._Subscription(ctx, opCtx.Operation.SelectionSet)
+
+		var buf bytes.Buffer
+		return func(ctx context.Context) *graphql.Response {
+			buf.Reset()
+			data := next(ctx)
+
+			if data == nil {
+				return nil
+			}
+			data.MarshalGQL(&buf)
+
+			return &graphql.Response{
+				Data: buf.Bytes(),
+			}
+		}
 
 	default:
 		return graphql.OneShot(graphql.ErrorResponse(ctx, "unsupported GraphQL operation"))
@@ -544,34 +581,6 @@ var parsedSchema = gqlparser.MustLoadSchema(sources...)
 // endregion ************************** generated!.gotpl **************************
 
 // region    ***************************** args.gotpl *****************************
-
-func (ec *executionContext) dir_length_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
-	var err error
-	args := map[string]any{}
-	arg0, err := ec.dir_length_argsMax(ctx, rawArgs)
-	if err != nil {
-		return nil, err
-	}
-	args["max"] = arg0
-	return args, nil
-}
-func (ec *executionContext) dir_length_argsMax(
-	ctx context.Context,
-	rawArgs map[string]any,
-) (int, error) {
-	if _, ok := rawArgs["max"]; !ok {
-		var zeroVal int
-		return zeroVal, nil
-	}
-
-	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("max"))
-	if tmp, ok := rawArgs["max"]; ok {
-		return ec.unmarshalNInt2int(ctx, tmp)
-	}
-
-	var zeroVal int
-	return zeroVal, nil
-}
 
 func (ec *executionContext) field_Comment_replies_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
@@ -644,39 +653,12 @@ func (ec *executionContext) field_Mutation_createComment_argsComment(
 	}
 
 	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("comment"))
-	directive0 := func(ctx context.Context) (any, error) {
-		tmp, ok := rawArgs["comment"]
-		if !ok {
-			var zeroVal CreateCommentInput
-			return zeroVal, nil
-		}
+	if tmp, ok := rawArgs["comment"]; ok {
 		return ec.unmarshalNCreateCommentInput2githubᚗcomᚋArtemSarafannikovᚋOzonTestTaskᚋinternalᚋgraphqlᚐCreateCommentInput(ctx, tmp)
 	}
 
-	directive1 := func(ctx context.Context) (any, error) {
-		max, err := ec.unmarshalNInt2int(ctx, 2000)
-		if err != nil {
-			var zeroVal CreateCommentInput
-			return zeroVal, err
-		}
-		if ec.directives.Length == nil {
-			var zeroVal CreateCommentInput
-			return zeroVal, errors.New("directive length is not implemented")
-		}
-		return ec.directives.Length(ctx, rawArgs, directive0, max)
-	}
-
-	tmp, err := directive1(ctx)
-	if err != nil {
-		var zeroVal CreateCommentInput
-		return zeroVal, graphql.ErrorOnPath(ctx, err)
-	}
-	if data, ok := tmp.(CreateCommentInput); ok {
-		return data, nil
-	} else {
-		var zeroVal CreateCommentInput
-		return zeroVal, graphql.ErrorOnPath(ctx, fmt.Errorf(`unexpected type %T from directive, should be github.com/ArtemSarafannikov/OzonTestTask/internal/graphql.CreateCommentInput`, tmp))
-	}
+	var zeroVal CreateCommentInput
+	return zeroVal, nil
 }
 
 func (ec *executionContext) field_Mutation_createPost_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
@@ -1143,6 +1125,34 @@ func (ec *executionContext) field_Query_posts_argsOffset(
 	return zeroVal, nil
 }
 
+func (ec *executionContext) field_Subscription_newCommentPost_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_Subscription_newCommentPost_argsPostID(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["postID"] = arg0
+	return args, nil
+}
+func (ec *executionContext) field_Subscription_newCommentPost_argsPostID(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (string, error) {
+	if _, ok := rawArgs["postID"]; !ok {
+		var zeroVal string
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("postID"))
+	if tmp, ok := rawArgs["postID"]; ok {
+		return ec.unmarshalNString2string(ctx, tmp)
+	}
+
+	var zeroVal string
+	return zeroVal, nil
+}
+
 func (ec *executionContext) field___Directive_args_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -1276,7 +1286,7 @@ func (ec *executionContext) _AuthPayload_token(ctx context.Context, field graphq
 		}
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middlewares stack in children
+		ctx = rctx // use context from middleware stack in children
 		return obj.Token, nil
 	})
 	if err != nil {
@@ -1320,7 +1330,7 @@ func (ec *executionContext) _AuthPayload_user(ctx context.Context, field graphql
 		}
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middlewares stack in children
+		ctx = rctx // use context from middleware stack in children
 		return obj.User, nil
 	})
 	if err != nil {
@@ -1374,7 +1384,7 @@ func (ec *executionContext) _Comment_id(ctx context.Context, field graphql.Colle
 		}
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middlewares stack in children
+		ctx = rctx // use context from middleware stack in children
 		return obj.ID, nil
 	})
 	if err != nil {
@@ -1418,7 +1428,7 @@ func (ec *executionContext) _Comment_post(ctx context.Context, field graphql.Col
 		}
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middlewares stack in children
+		ctx = rctx // use context from middleware stack in children
 		return ec.resolvers.Comment().Post(rctx, obj)
 	})
 	if err != nil {
@@ -1480,7 +1490,7 @@ func (ec *executionContext) _Comment_parentComment(ctx context.Context, field gr
 		}
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middlewares stack in children
+		ctx = rctx // use context from middleware stack in children
 		return ec.resolvers.Comment().ParentComment(rctx, obj)
 	})
 	if err != nil {
@@ -1537,7 +1547,7 @@ func (ec *executionContext) _Comment_author(ctx context.Context, field graphql.C
 		}
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middlewares stack in children
+		ctx = rctx // use context from middleware stack in children
 		return ec.resolvers.Comment().Author(rctx, obj)
 	})
 	if err != nil {
@@ -1591,7 +1601,7 @@ func (ec *executionContext) _Comment_text(ctx context.Context, field graphql.Col
 		}
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middlewares stack in children
+		ctx = rctx // use context from middleware stack in children
 		return obj.Text, nil
 	})
 	if err != nil {
@@ -1635,7 +1645,7 @@ func (ec *executionContext) _Comment_createdAt(ctx context.Context, field graphq
 		}
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middlewares stack in children
+		ctx = rctx // use context from middleware stack in children
 		return ec.resolvers.Comment().CreatedAt(rctx, obj)
 	})
 	if err != nil {
@@ -1679,7 +1689,7 @@ func (ec *executionContext) _Comment_replies(ctx context.Context, field graphql.
 		}
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middlewares stack in children
+		ctx = rctx // use context from middleware stack in children
 		return ec.resolvers.Comment().Replies(rctx, obj, fc.Args["limit"].(*int), fc.Args["offset"].(*int))
 	})
 	if err != nil {
@@ -1751,7 +1761,7 @@ func (ec *executionContext) _Mutation_createPost(ctx context.Context, field grap
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
 		directive0 := func(rctx context.Context) (any, error) {
-			ctx = rctx // use context from middlewares stack in children
+			ctx = rctx // use context from middleware stack in children
 			return ec.resolvers.Mutation().CreatePost(rctx, fc.Args["post"].(CreatePostInput))
 		}
 
@@ -1846,7 +1856,7 @@ func (ec *executionContext) _Mutation_editPost(ctx context.Context, field graphq
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
 		directive0 := func(rctx context.Context) (any, error) {
-			ctx = rctx // use context from middlewares stack in children
+			ctx = rctx // use context from middleware stack in children
 			return ec.resolvers.Mutation().EditPost(rctx, fc.Args["newPost"].(EditPostInput))
 		}
 
@@ -1941,7 +1951,7 @@ func (ec *executionContext) _Mutation_createComment(ctx context.Context, field g
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
 		directive0 := func(rctx context.Context) (any, error) {
-			ctx = rctx // use context from middlewares stack in children
+			ctx = rctx // use context from middleware stack in children
 			return ec.resolvers.Mutation().CreateComment(rctx, fc.Args["comment"].(CreateCommentInput))
 		}
 
@@ -2033,7 +2043,7 @@ func (ec *executionContext) _Mutation_register(ctx context.Context, field graphq
 		}
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middlewares stack in children
+		ctx = rctx // use context from middleware stack in children
 		return ec.resolvers.Mutation().Register(rctx, fc.Args["login"].(string), fc.Args["password"].(string))
 	})
 	if err != nil {
@@ -2094,7 +2104,7 @@ func (ec *executionContext) _Mutation_login(ctx context.Context, field graphql.C
 		}
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middlewares stack in children
+		ctx = rctx // use context from middleware stack in children
 		return ec.resolvers.Mutation().Login(rctx, fc.Args["login"].(string), fc.Args["password"].(string))
 	})
 	if err != nil {
@@ -2155,7 +2165,7 @@ func (ec *executionContext) _Post_id(ctx context.Context, field graphql.Collecte
 		}
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middlewares stack in children
+		ctx = rctx // use context from middleware stack in children
 		return obj.ID, nil
 	})
 	if err != nil {
@@ -2199,7 +2209,7 @@ func (ec *executionContext) _Post_author(ctx context.Context, field graphql.Coll
 		}
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middlewares stack in children
+		ctx = rctx // use context from middleware stack in children
 		return ec.resolvers.Post().Author(rctx, obj)
 	})
 	if err != nil {
@@ -2253,7 +2263,7 @@ func (ec *executionContext) _Post_title(ctx context.Context, field graphql.Colle
 		}
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middlewares stack in children
+		ctx = rctx // use context from middleware stack in children
 		return obj.Title, nil
 	})
 	if err != nil {
@@ -2297,7 +2307,7 @@ func (ec *executionContext) _Post_content(ctx context.Context, field graphql.Col
 		}
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middlewares stack in children
+		ctx = rctx // use context from middleware stack in children
 		return obj.Content, nil
 	})
 	if err != nil {
@@ -2341,7 +2351,7 @@ func (ec *executionContext) _Post_allowComments(ctx context.Context, field graph
 		}
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middlewares stack in children
+		ctx = rctx // use context from middleware stack in children
 		return obj.AllowComments, nil
 	})
 	if err != nil {
@@ -2385,7 +2395,7 @@ func (ec *executionContext) _Post_editedAt(ctx context.Context, field graphql.Co
 		}
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middlewares stack in children
+		ctx = rctx // use context from middleware stack in children
 		return ec.resolvers.Post().EditedAt(rctx, obj)
 	})
 	if err != nil {
@@ -2426,7 +2436,7 @@ func (ec *executionContext) _Post_createdAt(ctx context.Context, field graphql.C
 		}
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middlewares stack in children
+		ctx = rctx // use context from middleware stack in children
 		return ec.resolvers.Post().CreatedAt(rctx, obj)
 	})
 	if err != nil {
@@ -2470,7 +2480,7 @@ func (ec *executionContext) _Post_comments(ctx context.Context, field graphql.Co
 		}
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middlewares stack in children
+		ctx = rctx // use context from middleware stack in children
 		return ec.resolvers.Post().Comments(rctx, obj, fc.Args["limit"].(*int), fc.Args["offset"].(*int))
 	})
 	if err != nil {
@@ -2541,7 +2551,7 @@ func (ec *executionContext) _Query_posts(ctx context.Context, field graphql.Coll
 		}
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middlewares stack in children
+		ctx = rctx // use context from middleware stack in children
 		return ec.resolvers.Query().Posts(rctx, fc.Args["authorID"].(*string), fc.Args["limit"].(*int), fc.Args["offset"].(*int))
 	})
 	if err != nil {
@@ -2614,7 +2624,7 @@ func (ec *executionContext) _Query_post(ctx context.Context, field graphql.Colle
 		}
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middlewares stack in children
+		ctx = rctx // use context from middleware stack in children
 		return ec.resolvers.Query().Post(rctx, fc.Args["postID"].(string))
 	})
 	if err != nil {
@@ -2684,7 +2694,7 @@ func (ec *executionContext) _Query_comments(ctx context.Context, field graphql.C
 		}
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middlewares stack in children
+		ctx = rctx // use context from middleware stack in children
 		return ec.resolvers.Query().Comments(rctx, fc.Args["postID"].(string), fc.Args["authorID"].(*string), fc.Args["limit"].(*int), fc.Args["offset"].(*int))
 	})
 	if err != nil {
@@ -2755,7 +2765,7 @@ func (ec *executionContext) _Query_comment(ctx context.Context, field graphql.Co
 		}
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middlewares stack in children
+		ctx = rctx // use context from middleware stack in children
 		return ec.resolvers.Query().Comment(rctx, fc.Args["commentID"].(string))
 	})
 	if err != nil {
@@ -2823,7 +2833,7 @@ func (ec *executionContext) _Query___type(ctx context.Context, field graphql.Col
 		}
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middlewares stack in children
+		ctx = rctx // use context from middleware stack in children
 		return ec.introspectType(fc.Args["name"].(string))
 	})
 	if err != nil {
@@ -2899,7 +2909,7 @@ func (ec *executionContext) _Query___schema(ctx context.Context, field graphql.C
 		}
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middlewares stack in children
+		ctx = rctx // use context from middleware stack in children
 		return ec.introspectSchema()
 	})
 	if err != nil {
@@ -2941,6 +2951,91 @@ func (ec *executionContext) fieldContext_Query___schema(_ context.Context, field
 	return fc, nil
 }
 
+func (ec *executionContext) _Subscription_newCommentPost(ctx context.Context, field graphql.CollectedField) (ret func(ctx context.Context) graphql.Marshaler) {
+	fc, err := ec.fieldContext_Subscription_newCommentPost(ctx, field)
+	if err != nil {
+		return nil
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = nil
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Subscription().NewCommentPost(rctx, fc.Args["postID"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return nil
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return nil
+	}
+	return func(ctx context.Context) graphql.Marshaler {
+		select {
+		case res, ok := <-resTmp.(<-chan *models.Comment):
+			if !ok {
+				return nil
+			}
+			return graphql.WriterFunc(func(w io.Writer) {
+				w.Write([]byte{'{'})
+				graphql.MarshalString(field.Alias).MarshalGQL(w)
+				w.Write([]byte{':'})
+				ec.marshalNComment2ᚖgithubᚗcomᚋArtemSarafannikovᚋOzonTestTaskᚋinternalᚋmodelsᚐComment(ctx, field.Selections, res).MarshalGQL(w)
+				w.Write([]byte{'}'})
+			})
+		case <-ctx.Done():
+			return nil
+		}
+	}
+}
+
+func (ec *executionContext) fieldContext_Subscription_newCommentPost(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Subscription",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Comment_id(ctx, field)
+			case "post":
+				return ec.fieldContext_Comment_post(ctx, field)
+			case "parentComment":
+				return ec.fieldContext_Comment_parentComment(ctx, field)
+			case "author":
+				return ec.fieldContext_Comment_author(ctx, field)
+			case "text":
+				return ec.fieldContext_Comment_text(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_Comment_createdAt(ctx, field)
+			case "replies":
+				return ec.fieldContext_Comment_replies(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Comment", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Subscription_newCommentPost_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _User_id(ctx context.Context, field graphql.CollectedField, obj *models.User) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_User_id(ctx, field)
 	if err != nil {
@@ -2954,7 +3049,7 @@ func (ec *executionContext) _User_id(ctx context.Context, field graphql.Collecte
 		}
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middlewares stack in children
+		ctx = rctx // use context from middleware stack in children
 		return obj.ID, nil
 	})
 	if err != nil {
@@ -2998,7 +3093,7 @@ func (ec *executionContext) _User_username(ctx context.Context, field graphql.Co
 		}
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middlewares stack in children
+		ctx = rctx // use context from middleware stack in children
 		return obj.Username, nil
 	})
 	if err != nil {
@@ -3042,7 +3137,7 @@ func (ec *executionContext) _User_lastActivity(ctx context.Context, field graphq
 		}
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middlewares stack in children
+		ctx = rctx // use context from middleware stack in children
 		return ec.resolvers.User().LastActivity(rctx, obj)
 	})
 	if err != nil {
@@ -3086,7 +3181,7 @@ func (ec *executionContext) _User_createdAt(ctx context.Context, field graphql.C
 		}
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middlewares stack in children
+		ctx = rctx // use context from middleware stack in children
 		return ec.resolvers.User().CreatedAt(rctx, obj)
 	})
 	if err != nil {
@@ -3130,7 +3225,7 @@ func (ec *executionContext) ___Directive_name(ctx context.Context, field graphql
 		}
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middlewares stack in children
+		ctx = rctx // use context from middleware stack in children
 		return obj.Name, nil
 	})
 	if err != nil {
@@ -3174,7 +3269,7 @@ func (ec *executionContext) ___Directive_description(ctx context.Context, field 
 		}
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middlewares stack in children
+		ctx = rctx // use context from middleware stack in children
 		return obj.Description(), nil
 	})
 	if err != nil {
@@ -3215,7 +3310,7 @@ func (ec *executionContext) ___Directive_locations(ctx context.Context, field gr
 		}
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middlewares stack in children
+		ctx = rctx // use context from middleware stack in children
 		return obj.Locations, nil
 	})
 	if err != nil {
@@ -3259,7 +3354,7 @@ func (ec *executionContext) ___Directive_args(ctx context.Context, field graphql
 		}
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middlewares stack in children
+		ctx = rctx // use context from middleware stack in children
 		return obj.Args, nil
 	})
 	if err != nil {
@@ -3328,7 +3423,7 @@ func (ec *executionContext) ___Directive_isRepeatable(ctx context.Context, field
 		}
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middlewares stack in children
+		ctx = rctx // use context from middleware stack in children
 		return obj.IsRepeatable, nil
 	})
 	if err != nil {
@@ -3372,7 +3467,7 @@ func (ec *executionContext) ___EnumValue_name(ctx context.Context, field graphql
 		}
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middlewares stack in children
+		ctx = rctx // use context from middleware stack in children
 		return obj.Name, nil
 	})
 	if err != nil {
@@ -3416,7 +3511,7 @@ func (ec *executionContext) ___EnumValue_description(ctx context.Context, field 
 		}
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middlewares stack in children
+		ctx = rctx // use context from middleware stack in children
 		return obj.Description(), nil
 	})
 	if err != nil {
@@ -3457,7 +3552,7 @@ func (ec *executionContext) ___EnumValue_isDeprecated(ctx context.Context, field
 		}
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middlewares stack in children
+		ctx = rctx // use context from middleware stack in children
 		return obj.IsDeprecated(), nil
 	})
 	if err != nil {
@@ -3501,7 +3596,7 @@ func (ec *executionContext) ___EnumValue_deprecationReason(ctx context.Context, 
 		}
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middlewares stack in children
+		ctx = rctx // use context from middleware stack in children
 		return obj.DeprecationReason(), nil
 	})
 	if err != nil {
@@ -3542,7 +3637,7 @@ func (ec *executionContext) ___Field_name(ctx context.Context, field graphql.Col
 		}
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middlewares stack in children
+		ctx = rctx // use context from middleware stack in children
 		return obj.Name, nil
 	})
 	if err != nil {
@@ -3586,7 +3681,7 @@ func (ec *executionContext) ___Field_description(ctx context.Context, field grap
 		}
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middlewares stack in children
+		ctx = rctx // use context from middleware stack in children
 		return obj.Description(), nil
 	})
 	if err != nil {
@@ -3627,7 +3722,7 @@ func (ec *executionContext) ___Field_args(ctx context.Context, field graphql.Col
 		}
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middlewares stack in children
+		ctx = rctx // use context from middleware stack in children
 		return obj.Args, nil
 	})
 	if err != nil {
@@ -3696,7 +3791,7 @@ func (ec *executionContext) ___Field_type(ctx context.Context, field graphql.Col
 		}
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middlewares stack in children
+		ctx = rctx // use context from middleware stack in children
 		return obj.Type, nil
 	})
 	if err != nil {
@@ -3764,7 +3859,7 @@ func (ec *executionContext) ___Field_isDeprecated(ctx context.Context, field gra
 		}
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middlewares stack in children
+		ctx = rctx // use context from middleware stack in children
 		return obj.IsDeprecated(), nil
 	})
 	if err != nil {
@@ -3808,7 +3903,7 @@ func (ec *executionContext) ___Field_deprecationReason(ctx context.Context, fiel
 		}
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middlewares stack in children
+		ctx = rctx // use context from middleware stack in children
 		return obj.DeprecationReason(), nil
 	})
 	if err != nil {
@@ -3849,7 +3944,7 @@ func (ec *executionContext) ___InputValue_name(ctx context.Context, field graphq
 		}
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middlewares stack in children
+		ctx = rctx // use context from middleware stack in children
 		return obj.Name, nil
 	})
 	if err != nil {
@@ -3893,7 +3988,7 @@ func (ec *executionContext) ___InputValue_description(ctx context.Context, field
 		}
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middlewares stack in children
+		ctx = rctx // use context from middleware stack in children
 		return obj.Description(), nil
 	})
 	if err != nil {
@@ -3934,7 +4029,7 @@ func (ec *executionContext) ___InputValue_type(ctx context.Context, field graphq
 		}
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middlewares stack in children
+		ctx = rctx // use context from middleware stack in children
 		return obj.Type, nil
 	})
 	if err != nil {
@@ -4002,7 +4097,7 @@ func (ec *executionContext) ___InputValue_defaultValue(ctx context.Context, fiel
 		}
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middlewares stack in children
+		ctx = rctx // use context from middleware stack in children
 		return obj.DefaultValue, nil
 	})
 	if err != nil {
@@ -4043,7 +4138,7 @@ func (ec *executionContext) ___InputValue_isDeprecated(ctx context.Context, fiel
 		}
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middlewares stack in children
+		ctx = rctx // use context from middleware stack in children
 		return obj.IsDeprecated(), nil
 	})
 	if err != nil {
@@ -4087,7 +4182,7 @@ func (ec *executionContext) ___InputValue_deprecationReason(ctx context.Context,
 		}
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middlewares stack in children
+		ctx = rctx // use context from middleware stack in children
 		return obj.DeprecationReason(), nil
 	})
 	if err != nil {
@@ -4128,7 +4223,7 @@ func (ec *executionContext) ___Schema_description(ctx context.Context, field gra
 		}
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middlewares stack in children
+		ctx = rctx // use context from middleware stack in children
 		return obj.Description(), nil
 	})
 	if err != nil {
@@ -4169,7 +4264,7 @@ func (ec *executionContext) ___Schema_types(ctx context.Context, field graphql.C
 		}
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middlewares stack in children
+		ctx = rctx // use context from middleware stack in children
 		return obj.Types(), nil
 	})
 	if err != nil {
@@ -4237,7 +4332,7 @@ func (ec *executionContext) ___Schema_queryType(ctx context.Context, field graph
 		}
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middlewares stack in children
+		ctx = rctx // use context from middleware stack in children
 		return obj.QueryType(), nil
 	})
 	if err != nil {
@@ -4305,7 +4400,7 @@ func (ec *executionContext) ___Schema_mutationType(ctx context.Context, field gr
 		}
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middlewares stack in children
+		ctx = rctx // use context from middleware stack in children
 		return obj.MutationType(), nil
 	})
 	if err != nil {
@@ -4370,7 +4465,7 @@ func (ec *executionContext) ___Schema_subscriptionType(ctx context.Context, fiel
 		}
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middlewares stack in children
+		ctx = rctx // use context from middleware stack in children
 		return obj.SubscriptionType(), nil
 	})
 	if err != nil {
@@ -4435,7 +4530,7 @@ func (ec *executionContext) ___Schema_directives(ctx context.Context, field grap
 		}
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middlewares stack in children
+		ctx = rctx // use context from middleware stack in children
 		return obj.Directives(), nil
 	})
 	if err != nil {
@@ -4491,7 +4586,7 @@ func (ec *executionContext) ___Type_kind(ctx context.Context, field graphql.Coll
 		}
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middlewares stack in children
+		ctx = rctx // use context from middleware stack in children
 		return obj.Kind(), nil
 	})
 	if err != nil {
@@ -4535,7 +4630,7 @@ func (ec *executionContext) ___Type_name(ctx context.Context, field graphql.Coll
 		}
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middlewares stack in children
+		ctx = rctx // use context from middleware stack in children
 		return obj.Name(), nil
 	})
 	if err != nil {
@@ -4576,7 +4671,7 @@ func (ec *executionContext) ___Type_description(ctx context.Context, field graph
 		}
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middlewares stack in children
+		ctx = rctx // use context from middleware stack in children
 		return obj.Description(), nil
 	})
 	if err != nil {
@@ -4617,7 +4712,7 @@ func (ec *executionContext) ___Type_fields(ctx context.Context, field graphql.Co
 		}
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middlewares stack in children
+		ctx = rctx // use context from middleware stack in children
 		return obj.Fields(fc.Args["includeDeprecated"].(bool)), nil
 	})
 	if err != nil {
@@ -4683,7 +4778,7 @@ func (ec *executionContext) ___Type_interfaces(ctx context.Context, field graphq
 		}
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middlewares stack in children
+		ctx = rctx // use context from middleware stack in children
 		return obj.Interfaces(), nil
 	})
 	if err != nil {
@@ -4748,7 +4843,7 @@ func (ec *executionContext) ___Type_possibleTypes(ctx context.Context, field gra
 		}
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middlewares stack in children
+		ctx = rctx // use context from middleware stack in children
 		return obj.PossibleTypes(), nil
 	})
 	if err != nil {
@@ -4813,7 +4908,7 @@ func (ec *executionContext) ___Type_enumValues(ctx context.Context, field graphq
 		}
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middlewares stack in children
+		ctx = rctx // use context from middleware stack in children
 		return obj.EnumValues(fc.Args["includeDeprecated"].(bool)), nil
 	})
 	if err != nil {
@@ -4875,7 +4970,7 @@ func (ec *executionContext) ___Type_inputFields(ctx context.Context, field graph
 		}
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middlewares stack in children
+		ctx = rctx // use context from middleware stack in children
 		return obj.InputFields(), nil
 	})
 	if err != nil {
@@ -4930,7 +5025,7 @@ func (ec *executionContext) ___Type_ofType(ctx context.Context, field graphql.Co
 		}
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middlewares stack in children
+		ctx = rctx // use context from middleware stack in children
 		return obj.OfType(), nil
 	})
 	if err != nil {
@@ -4995,7 +5090,7 @@ func (ec *executionContext) ___Type_specifiedByURL(ctx context.Context, field gr
 		}
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middlewares stack in children
+		ctx = rctx // use context from middleware stack in children
 		return obj.SpecifiedByURL(), nil
 	})
 	if err != nil {
@@ -5036,7 +5131,7 @@ func (ec *executionContext) ___Type_isOneOf(ctx context.Context, field graphql.C
 		}
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middlewares stack in children
+		ctx = rctx // use context from middleware stack in children
 		return obj.IsOneOf(), nil
 	})
 	if err != nil {
@@ -5879,6 +5974,26 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 	return out
 }
 
+var subscriptionImplementors = []string{"Subscription"}
+
+func (ec *executionContext) _Subscription(ctx context.Context, sel ast.SelectionSet) func(ctx context.Context) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, subscriptionImplementors)
+	ctx = graphql.WithFieldContext(ctx, &graphql.FieldContext{
+		Object: "Subscription",
+	})
+	if len(fields) != 1 {
+		ec.Errorf(ctx, "must subscribe to exactly one stream")
+		return nil
+	}
+
+	switch fields[0].Name {
+	case "newCommentPost":
+		return ec._Subscription_newCommentPost(ctx, fields[0])
+	default:
+		panic("unknown field " + strconv.Quote(fields[0].Name))
+	}
+}
+
 var userImplementors = []string{"User"}
 
 func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj *models.User) graphql.Marshaler {
@@ -6439,21 +6554,6 @@ func (ec *executionContext) unmarshalNID2string(ctx context.Context, v any) (str
 
 func (ec *executionContext) marshalNID2string(ctx context.Context, sel ast.SelectionSet, v string) graphql.Marshaler {
 	res := graphql.MarshalID(v)
-	if res == graphql.Null {
-		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
-		}
-	}
-	return res
-}
-
-func (ec *executionContext) unmarshalNInt2int(ctx context.Context, v any) (int, error) {
-	res, err := graphql.UnmarshalInt(v)
-	return res, graphql.ErrorOnPath(ctx, err)
-}
-
-func (ec *executionContext) marshalNInt2int(ctx context.Context, sel ast.SelectionSet, v int) graphql.Marshaler {
-	res := graphql.MarshalInt(v)
 	if res == graphql.Null {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "the requested element is null which the schema does not allow")

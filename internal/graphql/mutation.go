@@ -20,7 +20,12 @@ func (r *mutationResolver) CreateComment(ctx context.Context, comment CreateComm
 	if len(comment.Text) > utils.MaxCommentTextSize {
 		return nil, cstErrors.TooLongContentError
 	}
-	return r.CommentService.CreateComment(ctx, comment.Text, comment.PostID, comment.ParentCommentID)
+	newComment, err := r.CommentService.CreateComment(ctx, comment.Text, comment.PostID, comment.ParentCommentID)
+	if err != nil {
+		return nil, err
+	}
+	r.PubSub.Publish(comment.PostID, newComment)
+	return newComment, err
 }
 
 // EditPost is the resolver for the editPost field.
