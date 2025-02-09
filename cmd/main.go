@@ -3,15 +3,10 @@ package main
 import (
 	"github.com/ArtemSarafannikov/OzonTestTask/internal/app"
 	"github.com/ArtemSarafannikov/OzonTestTask/internal/config"
+	"github.com/ArtemSarafannikov/OzonTestTask/internal/utils"
 	"github.com/joho/godotenv"
 	"log/slog"
 	"os"
-)
-
-const (
-	envLocal = "local"
-	envDev   = "dev"
-	envProd  = "prod"
 )
 
 func init() {
@@ -33,15 +28,15 @@ func setupLogger(env string) *slog.Logger {
 	var log *slog.Logger
 
 	switch env {
-	case envLocal:
+	case utils.EnvLocal:
 		log = slog.New(
 			slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}),
 		)
-	case envDev:
+	case utils.EnvDev:
 		log = slog.New(
 			slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}),
 		)
-	case envProd:
+	case utils.EnvProd:
 		log = slog.New(
 			slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo}),
 		)

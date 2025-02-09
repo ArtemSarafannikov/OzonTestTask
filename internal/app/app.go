@@ -12,17 +12,13 @@ import (
 	"github.com/ArtemSarafannikov/OzonTestTask/internal/middlewares"
 	"github.com/ArtemSarafannikov/OzonTestTask/internal/repository"
 	"github.com/ArtemSarafannikov/OzonTestTask/internal/service"
+	"github.com/ArtemSarafannikov/OzonTestTask/internal/utils"
 	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
-)
-
-const (
-	inmemoryStorage = "inmemory"
-	postgresStorage = "postgres"
 )
 
 type App struct {
@@ -37,10 +33,10 @@ func New(log *slog.Logger, config *config.Config) *App {
 	}
 
 	var repo repository.Repository
-	if config.StorageType == inmemoryStorage {
+	if config.StorageType == utils.InmemoryStorage {
 		repo = repository.NewInMemoryRepository()
-	} else if config.StorageType == postgresStorage {
-
+	} else if config.StorageType == utils.PostgresStorage {
+		// TODO: postgres
 	} else {
 		panic("unsupported storage type")
 	}
@@ -69,7 +65,9 @@ func (a *App) SetupHandlers(repo repository.Repository,
 	commentService *service.CommentService,
 	pubSub *service.PubSub) {
 
-	http.Handle("/", playground.Handler("GraphQL playground", "/query"))
+	if a.config.Env != utils.EnvProd {
+		http.Handle("/", playground.Handler("GraphQL playground", "/query"))
+	}
 
 	defaultServer := handler.NewDefaultServer(
 		graphql.NewExecutableSchema(graphql.NewRootResolver(postService, userService, commentService, pubSub)),
@@ -98,6 +96,9 @@ func (a *App) Run() error {
 
 	go func() {
 		log.Info("Server starting", slog.String("address", a.server.Addr))
+		if a.config.Env != utils.EnvProd {
+			log.Info("Playground is running", slog.String("address", a.server.Addr))
+		}
 		if err := http.ListenAndServe(a.server.Addr, nil); !errors.Is(err, http.ErrServerClosed) {
 			errChan <- err
 			return
