@@ -5,8 +5,11 @@ import (
 	"time"
 )
 
+type ctxKey string
+
 var (
-	UserIdCtxKey = "userID"
+	UserIdCtxKey      = ctxKey("userID")
+	DataLoadersCtxKey = ctxKey("dataloaders")
 )
 
 func ConvertTimeToString(t time.Time) string {

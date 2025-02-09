@@ -20,4 +20,12 @@ type Repository interface {
 	GetUserByLogin(ctx context.Context, login string) (*models.User, error)
 	GetUserByID(ctx context.Context, id string) (*models.User, error)
 	FixLastActivity(ctx context.Context, id string) error
+
+	// For dataloader
+	GetUsersByIDs(ctx context.Context, ids []string) ([]*models.User, error)
+	GetPostsByIDs(ctx context.Context, ids []string) ([]*models.Post, error)
+	GetCommentsByIDs(ctx context.Context, ids []string) ([]*models.Comment, error)
+	GetCommentsByPostIDs(ctx context.Context, ids []string) ([]*models.Comment, error)
+	GetCommentsByAuthorIDs(ctx context.Context, ids []string) ([]*models.Comment, error)
+	GetCommentsByParentIDs(ctx context.Context, ids []string) ([]*models.Comment, error)
 }

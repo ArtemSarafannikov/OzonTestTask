@@ -220,3 +220,92 @@ func (r *InMemoryRepository) CreateComment(ctx context.Context, comment *models.
 	r.comments.Store(newId, comment)
 	return comment, nil
 }
+
+func (r *InMemoryRepository) GetUsersByIDs(ctx context.Context, ids []string) ([]*models.User, error) {
+	users := make([]*models.User, 0, len(ids))
+	var err error
+
+	for _, id := range ids {
+		var user *models.User
+		user, err = r.GetUserByID(ctx, id)
+		users = append(users, user)
+	}
+	return users, err
+}
+
+func (r *InMemoryRepository) GetCommentsByIDs(ctx context.Context, ids []string) ([]*models.Comment, error) {
+	comments := make([]*models.Comment, 0, len(ids))
+	var err error
+
+	for _, id := range ids {
+		var comment *models.Comment
+		comment, err = r.GetCommentById(ctx, id)
+		comments = append(comments, comment)
+	}
+	return comments, err
+}
+
+func (r *InMemoryRepository) GetCommentsByPostIDs(ctx context.Context, ids []string) ([]*models.Comment, error) {
+	// TODO: make error
+	var comments []*models.Comment
+	idsSet := map[string]struct{}{}
+	for _, id := range ids {
+		idsSet[id] = struct{}{}
+	}
+	r.comments.Range(func(key, value interface{}) bool {
+		comment := value.(*models.Comment)
+		if _, ok := idsSet[comment.PostID]; ok {
+			comments = append(comments, comment)
+		}
+		return true
+	})
+	return comments, nil
+}
+
+func (r *InMemoryRepository) GetCommentsByAuthorIDs(ctx context.Context, ids []string) ([]*models.Comment, error) {
+	// TODO: make error
+	var comments []*models.Comment
+	idsSet := map[string]struct{}{}
+	for _, id := range ids {
+		idsSet[id] = struct{}{}
+	}
+	r.comments.Range(func(key, value interface{}) bool {
+		comment := value.(*models.Comment)
+		if _, ok := idsSet[comment.AuthorID]; ok {
+			comments = append(comments, comment)
+		}
+		return true
+	})
+	return comments, nil
+}
+
+func (r *InMemoryRepository) GetPostsByIDs(ctx context.Context, ids []string) ([]*models.Post, error) {
+	posts := make([]*models.Post, 0, len(ids))
+	var err error
+
+	for _, id := range ids {
+		var post *models.Post
+		post, err = r.GetPostById(ctx, id)
+		posts = append(posts, post)
+	}
+	return posts, err
+}
+
+func (r *InMemoryRepository) GetCommentsByParentIDs(ctx context.Context, ids []string) ([]*models.Comment, error) {
+	// TODO: make error
+	var comments []*models.Comment
+	idsSet := map[string]struct{}{}
+	for _, id := range ids {
+		idsSet[id] = struct{}{}
+	}
+	r.comments.Range(func(key, value interface{}) bool {
+		comment := value.(*models.Comment)
+		if comment.ParentID != nil {
+			if _, ok := idsSet[*comment.ParentID]; ok {
+				comments = append(comments, comment)
+			}
+		}
+		return true
+	})
+	return comments, nil
+}

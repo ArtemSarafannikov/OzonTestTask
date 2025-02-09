@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"fmt"
 	"github.com/ArtemSarafannikov/OzonTestTask/internal/errors"
 	"github.com/ArtemSarafannikov/OzonTestTask/internal/models"
 	"github.com/ArtemSarafannikov/OzonTestTask/internal/repository"
@@ -57,6 +56,5 @@ func (s *UserService) Login(ctx context.Context, login string, password string) 
 
 func (s *UserService) GetUserByID(ctx context.Context, id string) (user *models.User, err error) {
 	user, err = s.repo.GetUserByID(ctx, id)
-	fmt.Println("GetUserByID: request to db")
 	return user, err
 }

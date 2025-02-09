@@ -4,7 +4,7 @@ import (
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/playground"
 	"github.com/ArtemSarafannikov/OzonTestTask/internal/graphql"
-	"github.com/ArtemSarafannikov/OzonTestTask/internal/middleware"
+	"github.com/ArtemSarafannikov/OzonTestTask/internal/middlewares"
 	"github.com/ArtemSarafannikov/OzonTestTask/internal/repository"
 	"github.com/ArtemSarafannikov/OzonTestTask/internal/service"
 	"log"
@@ -20,10 +20,13 @@ func main() {
 	commentService := service.NewCommentService(repo)
 
 	http.Handle("/", playground.Handler("GraphQL playground", "/query"))
+	rootHandler := middlewares.DataloaderMiddleware(repo,
+		handler.NewDefaultServer(
+			graphql.NewExecutableSchema(graphql.NewRootResolver(postService, userService, commentService)),
+		),
+	)
 
-	srv := handler.NewDefaultServer(graphql.NewExecutableSchema(graphql.NewRootResolver(postService, userService, commentService)))
-
-	http.Handle("/query", middleware.AuthMiddleware(srv))
+	http.Handle("/query", middlewares.AuthMiddleware(rootHandler))
 
 	log.Printf("connect to http://localhost:%s/ for GraphQL playground", defaultPort)
 	log.Fatal(http.ListenAndServe(":"+defaultPort, nil))
