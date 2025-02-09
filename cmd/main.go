@@ -1,33 +1,50 @@
 package main
 
 import (
-	"github.com/99designs/gqlgen/graphql/handler"
-	"github.com/99designs/gqlgen/graphql/playground"
-	"github.com/ArtemSarafannikov/OzonTestTask/internal/graphql"
-	"github.com/ArtemSarafannikov/OzonTestTask/internal/middlewares"
-	"github.com/ArtemSarafannikov/OzonTestTask/internal/repository"
-	"github.com/ArtemSarafannikov/OzonTestTask/internal/service"
-	"log"
-	"net/http"
+	"github.com/ArtemSarafannikov/OzonTestTask/internal/app"
+	"github.com/ArtemSarafannikov/OzonTestTask/internal/config"
+	"github.com/joho/godotenv"
+	"log/slog"
+	"os"
 )
 
-const defaultPort = "8080"
+const (
+	envLocal = "local"
+	envDev   = "dev"
+	envProd  = "prod"
+)
+
+func init() {
+	if err := godotenv.Load(); err != nil {
+		panic("No .env file found")
+	}
+}
 
 func main() {
-	repo := repository.NewInMemoryRepository()
-	postService := service.NewPostService(repo)
-	userService := service.NewUserService(repo)
-	commentService := service.NewCommentService(repo)
+	cfg := config.MustLoad()
 
-	http.Handle("/", playground.Handler("GraphQL playground", "/query"))
-	rootHandler := middlewares.DataloaderMiddleware(repo,
-		handler.NewDefaultServer(
-			graphql.NewExecutableSchema(graphql.NewRootResolver(postService, userService, commentService)),
-		),
-	)
+	log := setupLogger(cfg.Env)
 
-	http.Handle("/query", middlewares.AuthMiddleware(rootHandler))
+	application := app.New(log, cfg)
+	application.MustRun()
+}
 
-	log.Printf("connect to http://localhost:%s/ for GraphQL playground", defaultPort)
-	log.Fatal(http.ListenAndServe(":"+defaultPort, nil))
+func setupLogger(env string) *slog.Logger {
+	var log *slog.Logger
+
+	switch env {
+	case envLocal:
+		log = slog.New(
+			slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}),
+		)
+	case envDev:
+		log = slog.New(
+			slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}),
+		)
+	case envProd:
+		log = slog.New(
+			slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo}),
+		)
+	}
+	return log
 }

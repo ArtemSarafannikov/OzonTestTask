@@ -10,8 +10,7 @@ func (r *Resolver) Query() QueryResolver { return &queryResolver{r} }
 type queryResolver struct{ *Resolver }
 
 func (r *queryResolver) Posts(ctx context.Context, authorID *string, limit, offset *int) ([]*models.Post, error) {
-	// TODO: add filter posts by authorID
-	return r.PostService.GetPosts(ctx, *limit, *offset)
+	return r.PostService.GetPosts(ctx, authorID, *limit, *offset)
 }
 
 func (r *queryResolver) Post(ctx context.Context, postID string) (*models.Post, error) {
@@ -20,7 +19,7 @@ func (r *queryResolver) Post(ctx context.Context, postID string) (*models.Post, 
 
 // Comments is the resolver for the comments field.
 func (r *queryResolver) Comments(ctx context.Context, postID string, authorID *string, limit *int, offset *int) ([]*models.Comment, error) {
-	return r.CommentService.GetComments(ctx, postID, *limit, *offset)
+	return r.CommentService.GetComments(ctx, postID, authorID, *limit, *offset)
 }
 
 // Comment is the resolver for the comment field.

@@ -1,16 +1,14 @@
 package utils
 
 import (
+	cstErrors "github.com/ArtemSarafannikov/OzonTestTask/internal/errors"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
+	"os"
 	"time"
 )
 
-var (
-	JWTSecret = []byte("904c5069fb022e66982020c44d95c7404bf1311012ed67b0fa83de7219714214")
-)
-
-func GenerateNewId() (string, error) {
+func GenerateNewID() (string, error) {
 	id, err := uuid.NewV7()
 	if err != nil {
 		return "", err
@@ -19,11 +17,14 @@ func GenerateNewId() (string, error) {
 }
 
 func GenerateJWT(userID string) (string, error) {
+	JWTSecret, exist := os.LookupEnv("JWT_SECRET")
+	if !exist {
+		return "", cstErrors.NoJWTSecretError
+	}
 	claims := &jwt.RegisteredClaims{
 		Subject:   userID,
 		ExpiresAt: jwt.NewNumericDate(time.Now().Add(24 * time.Hour)),
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	// TODO: relocate to .env
-	return token.SignedString(JWTSecret)
+	return token.SignedString([]byte(JWTSecret))
 }

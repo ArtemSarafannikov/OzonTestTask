@@ -11,6 +11,7 @@ var (
 	InvalidCredentials     = GenerateError("Invalid credentials")
 	PermissionDeniedError  = GenerateError("Permission denied")
 	CommentNotInPostError  = GenerateError("Comment not in post")
+	NoJWTSecretError       = GenerateError("No jwt secret in environment")
 )
 
 func GenerateError(err string) error {

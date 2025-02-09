@@ -3,9 +3,11 @@ package middlewares
 import (
 	"context"
 	"fmt"
+	cstErrors "github.com/ArtemSarafannikov/OzonTestTask/internal/errors"
 	"github.com/ArtemSarafannikov/OzonTestTask/internal/utils"
 	"github.com/golang-jwt/jwt/v5"
 	"net/http"
+	"os"
 	"strings"
 )
 
@@ -20,7 +22,11 @@ func AuthMiddleware(next http.Handler) http.Handler {
 				if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 					return nil, fmt.Errorf("Unexpected signing method: %v", token.Header["alg"])
 				}
-				return utils.JWTSecret, nil
+				jwtSecret, exists := os.LookupEnv("JWT_SECRET")
+				if !exists {
+					return nil, cstErrors.NoJWTSecretError
+				}
+				return []byte(jwtSecret), nil
 			})
 
 			if err == nil && token.Valid {

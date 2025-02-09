@@ -16,12 +16,15 @@ func NewPostService(repo repository.Repository) *PostService {
 	return &PostService{repo: repo}
 }
 
-func (s *PostService) GetPosts(ctx context.Context, limit, offset int) ([]*models.Post, error) {
-	return s.repo.GetPosts(ctx, limit, offset)
+func (s *PostService) GetPosts(ctx context.Context, authorID *string, limit, offset int) ([]*models.Post, error) {
+	if authorID == nil {
+		return s.repo.GetPosts(ctx, limit, offset)
+	}
+	return s.repo.GetPostsByAuthorID(ctx, *authorID, limit, offset)
 }
 
 func (s *PostService) GetPostByID(ctx context.Context, id string) (*models.Post, error) {
-	return s.repo.GetPostById(ctx, id)
+	return s.repo.GetPostByID(ctx, id)
 }
 
 func (s *PostService) CreatePost(ctx context.Context, title, content string, allowComment bool) (*models.Post, error) {
@@ -35,7 +38,7 @@ func (s *PostService) CreatePost(ctx context.Context, title, content string, all
 }
 
 func (s *PostService) EditPost(ctx context.Context, postID string, title, content *string, allowComment *bool) (*models.Post, error) {
-	post, err := s.repo.GetPostById(ctx, postID)
+	post, err := s.repo.GetPostByID(ctx, postID)
 	if err != nil {
 		return nil, err
 	}

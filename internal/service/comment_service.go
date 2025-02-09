@@ -16,20 +16,23 @@ func NewCommentService(repo repository.Repository) *CommentService {
 	return &CommentService{repo: repo}
 }
 
-func (s *CommentService) GetComments(ctx context.Context, postID string, limit, offset int) ([]*models.Comment, error) {
-	return s.repo.GetCommentsByPostId(ctx, postID, limit, offset)
+func (s *CommentService) GetComments(ctx context.Context, postID string, authorID *string, limit, offset int) ([]*models.Comment, error) {
+	if authorID == nil {
+		return s.repo.GetCommentsByPostID(ctx, postID, limit, offset)
+	}
+	return s.repo.GetCommentsByPostAuthorID(ctx, postID, *authorID, limit, offset)
 }
 
 func (s *CommentService) GetCommentByID(ctx context.Context, commentID string) (*models.Comment, error) {
-	return s.repo.GetCommentById(ctx, commentID)
+	return s.repo.GetCommentByID(ctx, commentID)
 }
 
 func (s *CommentService) GetReplies(ctx context.Context, commentID string, limit, offset int) ([]*models.Comment, error) {
-	return s.repo.GetCommentsByCommentId(ctx, commentID, limit, offset)
+	return s.repo.GetCommentsByCommentID(ctx, commentID, limit, offset)
 }
 
 func (s *CommentService) CreateComment(ctx context.Context, text, postID string, parentID *string) (*models.Comment, error) {
-	post, err := s.repo.GetPostById(ctx, postID)
+	post, err := s.repo.GetPostByID(ctx, postID)
 	if err != nil {
 		return nil, err
 	}
@@ -39,7 +42,7 @@ func (s *CommentService) CreateComment(ctx context.Context, text, postID string,
 
 	// Needed????
 	if parentID != nil {
-		parent, err := s.repo.GetCommentById(ctx, *parentID)
+		parent, err := s.repo.GetCommentByID(ctx, *parentID)
 		if err != nil {
 			return nil, err
 		}

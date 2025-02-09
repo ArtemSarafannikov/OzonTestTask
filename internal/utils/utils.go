@@ -10,6 +10,8 @@ type ctxKey string
 var (
 	UserIdCtxKey      = ctxKey("userID")
 	DataLoadersCtxKey = ctxKey("dataloaders")
+
+	MaxCommentTextSize = 2000
 )
 
 func ConvertTimeToString(t time.Time) string {

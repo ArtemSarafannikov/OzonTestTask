@@ -7,13 +7,15 @@ import (
 
 type Repository interface {
 	GetPosts(ctx context.Context, limit, offset int) ([]*models.Post, error)
-	GetPostById(ctx context.Context, id string) (*models.Post, error)
+	GetPostByID(ctx context.Context, id string) (*models.Post, error)
+	GetPostsByAuthorID(ctx context.Context, authorID string, limit, offset int) ([]*models.Post, error)
 	CreatePost(ctx context.Context, post *models.Post) (*models.Post, error)
 	UpdatePost(ctx context.Context, post *models.Post)
 
-	GetCommentsByPostId(ctx context.Context, postID string, limit, offset int) ([]*models.Comment, error)
-	GetCommentById(ctx context.Context, id string) (*models.Comment, error)
-	GetCommentsByCommentId(ctx context.Context, commentID string, limit, offset int) ([]*models.Comment, error)
+	GetCommentsByPostID(ctx context.Context, postID string, limit, offset int) ([]*models.Comment, error)
+	GetCommentsByPostAuthorID(ctx context.Context, postID string, authorID string, limit, offset int) ([]*models.Comment, error)
+	GetCommentByID(ctx context.Context, id string) (*models.Comment, error)
+	GetCommentsByCommentID(ctx context.Context, commentID string, limit, offset int) ([]*models.Comment, error)
 	CreateComment(ctx context.Context, comment *models.Comment) (*models.Comment, error)
 
 	CreateUser(ctx context.Context, user *models.User) (*models.User, error)

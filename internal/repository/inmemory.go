@@ -88,7 +88,7 @@ func (r *InMemoryRepository) CreateUser(ctx context.Context, user *models.User) 
 		return nil, cstErrors.UserAlreadyExistsError
 	}
 
-	newId, err := utils.GenerateNewId()
+	newId, err := utils.GenerateNewID()
 	if err != nil {
 		return nil, err
 	}
@@ -136,7 +136,7 @@ func (r *InMemoryRepository) FixLastActivity(ctx context.Context, id string) err
 	return nil
 }
 
-func (r *InMemoryRepository) GetPostById(ctx context.Context, id string) (*models.Post, error) {
+func (r *InMemoryRepository) GetPostByID(ctx context.Context, id string) (*models.Post, error) {
 	post, exists := r.posts.Load(id)
 	if !exists {
 		return nil, cstErrors.NotFoundError
@@ -144,7 +144,7 @@ func (r *InMemoryRepository) GetPostById(ctx context.Context, id string) (*model
 	return post.(*models.Post), nil
 }
 
-func (r *InMemoryRepository) GetCommentsByPostId(ctx context.Context, postID string, limit, offset int) ([]*models.Comment, error) {
+func (r *InMemoryRepository) GetCommentsByPostID(ctx context.Context, postID string, limit, offset int) ([]*models.Comment, error) {
 	var comments []*models.Comment
 
 	counter := 0
@@ -162,7 +162,7 @@ func (r *InMemoryRepository) GetCommentsByPostId(ctx context.Context, postID str
 	return comments, nil
 }
 
-func (r *InMemoryRepository) GetCommentById(ctx context.Context, id string) (*models.Comment, error) {
+func (r *InMemoryRepository) GetCommentByID(ctx context.Context, id string) (*models.Comment, error) {
 	comment, exists := r.comments.Load(id)
 	if !exists {
 		return nil, cstErrors.NotFoundError
@@ -170,7 +170,7 @@ func (r *InMemoryRepository) GetCommentById(ctx context.Context, id string) (*mo
 	return comment.(*models.Comment), nil
 }
 
-func (r *InMemoryRepository) GetCommentsByCommentId(ctx context.Context, commentID string, limit, offset int) ([]*models.Comment, error) {
+func (r *InMemoryRepository) GetCommentsByCommentID(ctx context.Context, commentID string, limit, offset int) ([]*models.Comment, error) {
 	var comments []*models.Comment
 
 	counter := 0
@@ -192,7 +192,7 @@ func (r *InMemoryRepository) GetCommentsByCommentId(ctx context.Context, comment
 }
 
 func (r *InMemoryRepository) CreatePost(ctx context.Context, post *models.Post) (*models.Post, error) {
-	newId, err := utils.GenerateNewId()
+	newId, err := utils.GenerateNewID()
 	if err != nil {
 		return nil, err
 	}
@@ -211,7 +211,7 @@ func (r *InMemoryRepository) UpdatePost(ctx context.Context, post *models.Post) 
 }
 
 func (r *InMemoryRepository) CreateComment(ctx context.Context, comment *models.Comment) (*models.Comment, error) {
-	newId, err := utils.GenerateNewId()
+	newId, err := utils.GenerateNewID()
 	if err != nil {
 		return nil, err
 	}
@@ -223,34 +223,34 @@ func (r *InMemoryRepository) CreateComment(ctx context.Context, comment *models.
 
 func (r *InMemoryRepository) GetUsersByIDs(ctx context.Context, ids []string) ([]*models.User, error) {
 	users := make([]*models.User, 0, len(ids))
-	var err error
 
 	for _, id := range ids {
-		var user *models.User
-		user, err = r.GetUserByID(ctx, id)
-		users = append(users, user)
+		if user, err := r.GetUserByID(ctx, id); err == nil {
+			users = append(users, user)
+		}
 	}
-	return users, err
+	return users, nil
 }
 
 func (r *InMemoryRepository) GetCommentsByIDs(ctx context.Context, ids []string) ([]*models.Comment, error) {
 	comments := make([]*models.Comment, 0, len(ids))
-	var err error
 
 	for _, id := range ids {
-		var comment *models.Comment
-		comment, err = r.GetCommentById(ctx, id)
-		comments = append(comments, comment)
+		if comment, err := r.GetCommentByID(ctx, id); err == nil {
+			comments = append(comments, comment)
+		}
 	}
-	return comments, err
+	return comments, nil
 }
 
 func (r *InMemoryRepository) GetCommentsByPostIDs(ctx context.Context, ids []string) ([]*models.Comment, error) {
-	// TODO: make error
 	var comments []*models.Comment
+
 	idsSet := map[string]struct{}{}
 	for _, id := range ids {
-		idsSet[id] = struct{}{}
+		if _, err := r.GetPostByID(ctx, id); err == nil {
+			idsSet[id] = struct{}{}
+		}
 	}
 	r.comments.Range(func(key, value interface{}) bool {
 		comment := value.(*models.Comment)
@@ -263,11 +263,13 @@ func (r *InMemoryRepository) GetCommentsByPostIDs(ctx context.Context, ids []str
 }
 
 func (r *InMemoryRepository) GetCommentsByAuthorIDs(ctx context.Context, ids []string) ([]*models.Comment, error) {
-	// TODO: make error
 	var comments []*models.Comment
+
 	idsSet := map[string]struct{}{}
 	for _, id := range ids {
-		idsSet[id] = struct{}{}
+		if _, err := r.GetUserByID(ctx, id); err == nil {
+			idsSet[id] = struct{}{}
+		}
 	}
 	r.comments.Range(func(key, value interface{}) bool {
 		comment := value.(*models.Comment)
@@ -281,22 +283,25 @@ func (r *InMemoryRepository) GetCommentsByAuthorIDs(ctx context.Context, ids []s
 
 func (r *InMemoryRepository) GetPostsByIDs(ctx context.Context, ids []string) ([]*models.Post, error) {
 	posts := make([]*models.Post, 0, len(ids))
-	var err error
 
 	for _, id := range ids {
 		var post *models.Post
-		post, err = r.GetPostById(ctx, id)
-		posts = append(posts, post)
+		post, err := r.GetPostByID(ctx, id)
+		if err == nil {
+			posts = append(posts, post)
+		}
 	}
-	return posts, err
+	return posts, nil
 }
 
 func (r *InMemoryRepository) GetCommentsByParentIDs(ctx context.Context, ids []string) ([]*models.Comment, error) {
-	// TODO: make error
 	var comments []*models.Comment
+
 	idsSet := map[string]struct{}{}
 	for _, id := range ids {
-		idsSet[id] = struct{}{}
+		if _, err := r.GetPostByID(ctx, id); err == nil {
+			idsSet[id] = struct{}{}
+		}
 	}
 	r.comments.Range(func(key, value interface{}) bool {
 		comment := value.(*models.Comment)
@@ -306,6 +311,50 @@ func (r *InMemoryRepository) GetCommentsByParentIDs(ctx context.Context, ids []s
 			}
 		}
 		return true
+	})
+	return comments, nil
+}
+
+func (r *InMemoryRepository) GetPostsByAuthorID(ctx context.Context, authorID string, limit, offset int) ([]*models.Post, error) {
+	var posts []*models.Post
+
+	if _, err := r.GetUserByID(ctx, authorID); err != nil {
+		return nil, cstErrors.NotFoundError
+	}
+
+	counter := 0
+	last := offset + limit - 1
+	r.posts.Range(func(key, value interface{}) bool {
+		if counter >= offset {
+			post := value.(*models.Post)
+			if post.AuthorID == authorID {
+				posts = append(posts, post)
+				counter++
+			}
+		}
+		return counter < last
+	})
+	return posts, nil
+}
+
+func (r *InMemoryRepository) GetCommentsByPostAuthorID(ctx context.Context, postID string, authorID string, limit, offset int) ([]*models.Comment, error) {
+	var comments []*models.Comment
+
+	if _, err := r.GetUserByID(ctx, authorID); err != nil {
+		return nil, cstErrors.NotFoundError
+	}
+
+	counter := 0
+	last := offset + limit
+	r.comments.Range(func(key, value interface{}) bool {
+		if counter >= offset {
+			comment := value.(*models.Comment)
+			if comment.PostID == postID && comment.AuthorID == authorID {
+				counter++
+				comments = append(comments, comment)
+			}
+		}
+		return counter < last
 	})
 	return comments, nil
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	cstErrors "github.com/ArtemSarafannikov/OzonTestTask/internal/errors"
 	"github.com/ArtemSarafannikov/OzonTestTask/internal/models"
+	"github.com/ArtemSarafannikov/OzonTestTask/internal/utils"
 )
 
 func (r *Resolver) Mutation() MutationResolver { return &mutationResolver{r} }
@@ -16,8 +17,7 @@ func (r *mutationResolver) CreatePost(ctx context.Context, post CreatePostInput)
 
 // CreateComment is the resolver for the createComment field.
 func (r *mutationResolver) CreateComment(ctx context.Context, comment CreateCommentInput) (*models.Comment, error) {
-	// TODO: relocate 2000 to const
-	if len(comment.Text) > 2000 {
+	if len(comment.Text) > utils.MaxCommentTextSize {
 		return nil, cstErrors.TooLongContentError
 	}
 	return r.CommentService.CreateComment(ctx, comment.Text, comment.PostID, comment.ParentCommentID)
