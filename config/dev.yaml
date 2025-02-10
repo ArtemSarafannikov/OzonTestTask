@@ -1,0 +1,11 @@
+env: "dev"
+
+port: 8080
+
+storage_type: "postgres"
+storage:
+  db_name: "post_db"
+  db_address: "localhost:5432"
+  db_user: "postgres"
+  db_password: "postgres"
+  db_sslmode: "disable"

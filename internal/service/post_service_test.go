@@ -5,7 +5,7 @@ import (
 	"errors"
 	cstErrors "github.com/ArtemSarafannikov/OzonTestTask/internal/errors"
 	"github.com/ArtemSarafannikov/OzonTestTask/internal/models"
-	"github.com/ArtemSarafannikov/OzonTestTask/internal/tests"
+	"github.com/ArtemSarafannikov/OzonTestTask/internal/testutils"
 	"github.com/ArtemSarafannikov/OzonTestTask/internal/utils"
 	"github.com/stretchr/testify/require"
 	"testing"
@@ -15,7 +15,7 @@ import (
 func TestPostService_GetPosts_NoAuthor(t *testing.T) {
 	ctx := context.Background()
 	now := time.Now()
-	fakeRepo := &tests.FakeRepository{
+	fakeRepo := &testutils.FakeRepository{
 		GetPostsFn: func(ctx context.Context, limit, offset int) ([]*models.Post, error) {
 			return []*models.Post{
 				{ID: "p1", Title: "Post 1", Content: "Content 1", AllowComments: true, AuthorID: "a1", CreatedAt: now},
@@ -33,7 +33,7 @@ func TestPostService_GetPosts_NoAuthor(t *testing.T) {
 func TestPostService_GetPosts_WithAuthor(t *testing.T) {
 	ctx := context.Background()
 	now := time.Now()
-	fakeRepo := &tests.FakeRepository{
+	fakeRepo := &testutils.FakeRepository{
 		GetPostsByAuthorIDFn: func(ctx context.Context, authorID string, limit, offset int) ([]*models.Post, error) {
 			if authorID == "a1" {
 				return []*models.Post{
@@ -54,7 +54,7 @@ func TestPostService_GetPosts_WithAuthor(t *testing.T) {
 func TestPostService_GetPostByID(t *testing.T) {
 	ctx := context.Background()
 	now := time.Now()
-	fakeRepo := &tests.FakeRepository{
+	fakeRepo := &testutils.FakeRepository{
 		GetPostByIDFn: func(ctx context.Context, id string) (*models.Post, error) {
 			if id == "p1" {
 				return &models.Post{
@@ -74,7 +74,7 @@ func TestPostService_GetPostByID(t *testing.T) {
 func TestPostService_CreatePost_Success(t *testing.T) {
 	ctx := context.WithValue(context.Background(), utils.UserIdCtxKey, "test_author")
 	now := time.Now()
-	fakeRepo := &tests.FakeRepository{
+	fakeRepo := &testutils.FakeRepository{
 		CreatePostFn: func(ctx context.Context, post *models.Post) (*models.Post, error) {
 			post.ID = "new_post"
 			if post.CreatedAt.IsZero() {
@@ -101,7 +101,7 @@ func TestPostService_EditPost_Success(t *testing.T) {
 		ID: "p1", Title: "Old Title", Content: "Old Content", AllowComments: true,
 		AuthorID: "test_author", CreatedAt: now,
 	}
-	fakeRepo := &tests.FakeRepository{
+	fakeRepo := &testutils.FakeRepository{
 		GetPostByIDFn: func(ctx context.Context, id string) (*models.Post, error) {
 			if id == "p1" {
 				return initialPost, nil
@@ -123,7 +123,7 @@ func TestPostService_EditPost_Success(t *testing.T) {
 
 func TestPostService_EditPost_GetPostError(t *testing.T) {
 	ctx := context.WithValue(context.Background(), utils.UserIdCtxKey, "test_author")
-	fakeRepo := &tests.FakeRepository{
+	fakeRepo := &testutils.FakeRepository{
 		GetPostByIDFn: func(ctx context.Context, id string) (*models.Post, error) {
 			return nil, errors.New("post not found")
 		},
@@ -143,7 +143,7 @@ func TestPostService_EditPost_PermissionDenied(t *testing.T) {
 		ID: "p1", Title: "Old Title", Content: "Old Content", AllowComments: true,
 		AuthorID: "other_author", CreatedAt: now,
 	}
-	fakeRepo := &tests.FakeRepository{
+	fakeRepo := &testutils.FakeRepository{
 		GetPostByIDFn: func(ctx context.Context, id string) (*models.Post, error) {
 			return initialPost, nil
 		},

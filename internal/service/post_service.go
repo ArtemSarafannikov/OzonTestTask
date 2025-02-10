@@ -38,6 +38,7 @@ func (s *PostService) CreatePost(ctx context.Context, title, content string, all
 }
 
 func (s *PostService) EditPost(ctx context.Context, postID string, title, content *string, allowComment *bool) (*models.Post, error) {
+	// FIXME: remove GetPostByID
 	post, err := s.repo.GetPostByID(ctx, postID)
 	if err != nil {
 		return nil, err

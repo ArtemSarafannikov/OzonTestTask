@@ -16,7 +16,7 @@ func GenerateNewID() (string, error) {
 	return id.String(), err
 }
 
-// GenerateJWT This function maded as a variable for tests
+// GenerateJWT This function maded as a variable for testutils
 var GenerateJWT = func(userID string) (string, error) {
 	JWTSecret, exist := os.LookupEnv("JWT_SECRET")
 	if !exist {

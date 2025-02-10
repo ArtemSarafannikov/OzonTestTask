@@ -5,7 +5,7 @@ import (
 	"errors"
 	cstErrors "github.com/ArtemSarafannikov/OzonTestTask/internal/errors"
 	"github.com/ArtemSarafannikov/OzonTestTask/internal/models"
-	"github.com/ArtemSarafannikov/OzonTestTask/internal/tests"
+	"github.com/ArtemSarafannikov/OzonTestTask/internal/testutils"
 	"github.com/ArtemSarafannikov/OzonTestTask/internal/utils"
 	"testing"
 	"time"
@@ -17,7 +17,7 @@ import (
 func TestCommentService_GetComments_NoAuthor(t *testing.T) {
 	ctx := context.Background()
 	now := time.Now()
-	fakeRepo := &tests.FakeRepository{
+	fakeRepo := &testutils.FakeRepository{
 		GetCommentsByPostIDFn: func(ctx context.Context, postID string, limit, offset int) ([]*models.Comment, error) {
 			return []*models.Comment{
 				{
@@ -48,7 +48,7 @@ func TestCommentService_GetComments_NoAuthor(t *testing.T) {
 func TestCommentService_GetComments_WithAuthor(t *testing.T) {
 	ctx := context.Background()
 	now := time.Now()
-	fakeRepo := &tests.FakeRepository{
+	fakeRepo := &testutils.FakeRepository{
 		GetCommentsByPostAuthorIDFn: func(ctx context.Context, postID string, authorID string, limit, offset int) ([]*models.Comment, error) {
 			if authorID == "a1" {
 				return []*models.Comment{
@@ -83,7 +83,7 @@ func TestCommentService_GetCommentByID_Success(t *testing.T) {
 		Text:      "Текст комментария",
 		CreatedAt: now,
 	}
-	fakeRepo := &tests.FakeRepository{
+	fakeRepo := &testutils.FakeRepository{
 		GetCommentByIDFn: func(ctx context.Context, id string) (*models.Comment, error) {
 			if id == "c1" {
 				return expected, nil
@@ -101,7 +101,7 @@ func TestCommentService_GetCommentByID_Success(t *testing.T) {
 func TestCommentService_GetReplies_Success(t *testing.T) {
 	ctx := context.Background()
 	now := time.Now()
-	fakeRepo := &tests.FakeRepository{
+	fakeRepo := &testutils.FakeRepository{
 		GetCommentsByCommentIDFn: func(ctx context.Context, commentID string, limit, offset int) ([]*models.Comment, error) {
 			return []*models.Comment{
 				{
@@ -136,7 +136,7 @@ func TestCommentService_CreateComment_Success(t *testing.T) {
 	ctx := context.WithValue(context.Background(), utils.UserIdCtxKey, "test_author")
 	now := time.Now()
 
-	fakeRepo := &tests.FakeRepository{
+	fakeRepo := &testutils.FakeRepository{
 		GetPostByIDFn: func(ctx context.Context, id string) (*models.Post, error) {
 			// Имитируем, что пост найден и разрешает комментарии
 			return &models.Post{
@@ -187,7 +187,7 @@ func TestCommentService_CreateComment_Error(t *testing.T) {
 
 	t.Run("GetPostByID error", func(t *testing.T) {
 		ctx := context.WithValue(context.Background(), utils.UserIdCtxKey, "test_author")
-		fakeRepo := &tests.FakeRepository{
+		fakeRepo := &testutils.FakeRepository{
 			GetPostByIDFn: func(ctx context.Context, id string) (*models.Post, error) {
 				return nil, errors.New("post not found")
 			},
@@ -201,7 +201,7 @@ func TestCommentService_CreateComment_Error(t *testing.T) {
 
 	t.Run("Post does not allow comments", func(t *testing.T) {
 		ctx := context.WithValue(context.Background(), utils.UserIdCtxKey, "test_author")
-		fakeRepo := &tests.FakeRepository{
+		fakeRepo := &testutils.FakeRepository{
 			GetPostByIDFn: func(ctx context.Context, id string) (*models.Post, error) {
 				return &models.Post{
 					ID:            id,
@@ -222,7 +222,7 @@ func TestCommentService_CreateComment_Error(t *testing.T) {
 
 	t.Run("Parent comment GetCommentByID error", func(t *testing.T) {
 		ctx := context.WithValue(context.Background(), utils.UserIdCtxKey, "test_author")
-		fakeRepo := &tests.FakeRepository{
+		fakeRepo := &testutils.FakeRepository{
 			GetPostByIDFn: func(ctx context.Context, id string) (*models.Post, error) {
 				return &models.Post{
 					ID:            id,
@@ -246,7 +246,7 @@ func TestCommentService_CreateComment_Error(t *testing.T) {
 
 	t.Run("Parent comment post mismatch", func(t *testing.T) {
 		ctx := context.WithValue(context.Background(), utils.UserIdCtxKey, "test_author")
-		fakeRepo := &tests.FakeRepository{
+		fakeRepo := &testutils.FakeRepository{
 			GetPostByIDFn: func(ctx context.Context, id string) (*models.Post, error) {
 				return &models.Post{
 					ID:            id,
@@ -278,7 +278,7 @@ func TestCommentService_CreateComment_Error(t *testing.T) {
 
 	t.Run("CreateComment error", func(t *testing.T) {
 		ctx := context.WithValue(context.Background(), utils.UserIdCtxKey, "test_author")
-		fakeRepo := &tests.FakeRepository{
+		fakeRepo := &testutils.FakeRepository{
 			GetPostByIDFn: func(ctx context.Context, id string) (*models.Post, error) {
 				return &models.Post{
 					ID:            id,

@@ -2,13 +2,13 @@ package utils
 
 import "golang.org/x/crypto/bcrypt"
 
-// HashPassword This function maded as a variable for tests
+// HashPassword This function maded as a variable for testutils
 var HashPassword = func(password string) (string, error) {
 	bytes, err := bcrypt.GenerateFromPassword([]byte(password), 14)
 	return string(bytes), err
 }
 
-// CheckPasswordHash This function maded as a variable for tests
+// CheckPasswordHash This function maded as a variable for testutils
 var CheckPasswordHash = func(password, hash string) bool {
 	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
 	return err == nil

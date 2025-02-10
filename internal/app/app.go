@@ -36,7 +36,11 @@ func New(log *slog.Logger, config *config.Config) *App {
 	if config.StorageType == utils.InmemoryStorage {
 		repo = repository.NewInMemoryRepository()
 	} else if config.StorageType == utils.PostgresStorage {
-		// TODO: postgres
+		var err error
+		repo, err = repository.NewPostgresRepository()
+		if err != nil {
+			panic(err)
+		}
 	} else {
 		panic("unsupported storage type")
 	}

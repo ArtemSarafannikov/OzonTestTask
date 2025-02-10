@@ -1,0 +1,35 @@
+version: "3.3"
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: post_api
+    depends_on:
+      - postgres
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+    networks:
+      - posts_service
+
+  postgres:
+    image: postgres:16
+    container_name: post_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: post_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./migrations/init.sql:/docker-entrypoint-initdb.d/init.sql
+
+volumes:
+  postgres_data:
+
+networks:
+  posts_service:
+    driver: bridge

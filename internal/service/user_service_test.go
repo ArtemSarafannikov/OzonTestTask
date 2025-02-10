@@ -5,7 +5,7 @@ import (
 	"errors"
 	cstErrors "github.com/ArtemSarafannikov/OzonTestTask/internal/errors"
 	"github.com/ArtemSarafannikov/OzonTestTask/internal/models"
-	"github.com/ArtemSarafannikov/OzonTestTask/internal/tests"
+	"github.com/ArtemSarafannikov/OzonTestTask/internal/testutils"
 	"github.com/ArtemSarafannikov/OzonTestTask/internal/utils"
 	"github.com/stretchr/testify/require"
 	"testing"
@@ -31,7 +31,7 @@ func TestUserService_Register_Success(t *testing.T) {
 	}
 
 	// Создаём FakeRepository, который будет присваивать ID новому пользователю.
-	fakeRepo := &tests.FakeRepository{
+	fakeRepo := &testutils.FakeRepository{
 		CreateUserFn: func(ctx context.Context, user *models.User) (*models.User, error) {
 			user.ID = "u1"
 			// Можно установить и дату создания, если нужно.
@@ -62,7 +62,7 @@ func TestUserService_Register_HashError(t *testing.T) {
 		return "", errors.New("hash error")
 	}
 
-	fakeRepo := &tests.FakeRepository{}
+	fakeRepo := &testutils.FakeRepository{}
 	svc := NewUserService(fakeRepo)
 
 	token, _, err := svc.Register(context.Background(), "testuser", "password123")
@@ -89,7 +89,7 @@ func TestUserService_Register_CreateUserError(t *testing.T) {
 		return "token_" + userID, nil
 	}
 
-	fakeRepo := &tests.FakeRepository{
+	fakeRepo := &testutils.FakeRepository{
 		CreateUserFn: func(ctx context.Context, user *models.User) (*models.User, error) {
 			return nil, errors.New("create user failed")
 		},
@@ -120,7 +120,7 @@ func TestUserService_Login_Success(t *testing.T) {
 		return "token_" + userID, nil
 	}
 
-	fakeRepo := &tests.FakeRepository{
+	fakeRepo := &testutils.FakeRepository{
 		GetUserByLoginFn: func(ctx context.Context, login string) (*models.User, error) {
 			// Симулируем, что найден пользователь с хешированным паролем.
 			return &models.User{
@@ -152,7 +152,7 @@ func TestUserService_Login_InvalidCredentials_WrongPassword(t *testing.T) {
 		return false
 	}
 
-	fakeRepo := &tests.FakeRepository{
+	fakeRepo := &testutils.FakeRepository{
 		GetUserByLoginFn: func(ctx context.Context, login string) (*models.User, error) {
 			return &models.User{
 				ID:       "u1",
@@ -171,7 +171,7 @@ func TestUserService_Login_InvalidCredentials_WrongPassword(t *testing.T) {
 
 // TestUserService_Login_GetUserByLoginError проверяет, что если репозиторий не может найти пользователя, возвращается ошибка.
 func TestUserService_Login_GetUserByLoginError(t *testing.T) {
-	fakeRepo := &tests.FakeRepository{
+	fakeRepo := &testutils.FakeRepository{
 		GetUserByLoginFn: func(ctx context.Context, login string) (*models.User, error) {
 			return nil, errors.New("not found")
 		},
@@ -187,7 +187,7 @@ func TestUserService_Login_GetUserByLoginError(t *testing.T) {
 
 // TestUserService_GetUserByID проверяет получение пользователя по ID.
 func TestUserService_GetUserByID(t *testing.T) {
-	fakeRepo := &tests.FakeRepository{
+	fakeRepo := &testutils.FakeRepository{
 		GetUserByIDFn: func(ctx context.Context, id string) (*models.User, error) {
 			if id == "u1" {
 				return &models.User{
