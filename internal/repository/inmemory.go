@@ -22,7 +22,7 @@ func NewInMemoryRepository() *InMemoryRepository {
 		ID:            "1",
 		Title:         "First Post",
 		Content:       "This is the first post",
-		AllowComments: true,
+		AllowComments: false,
 		AuthorID:      "0194e611-bfed-7a3c-9586-6c77012fbf7a",
 		EditedAt:      &now,
 		CreatedAt:     time.Now(),
@@ -31,7 +31,7 @@ func NewInMemoryRepository() *InMemoryRepository {
 		ID:            "2",
 		Title:         "Second Post",
 		Content:       "Test test test test",
-		AllowComments: false,
+		AllowComments: true,
 		AuthorID:      "0194e611-bfed-7a3c-9586-6c77012fbf7a",
 		EditedAt:      &now,
 		CreatedAt:     time.Now(),
@@ -50,9 +50,44 @@ func NewInMemoryRepository() *InMemoryRepository {
 		PostID:    "2",
 		ParentID:  nil,
 		AuthorID:  "0194e611-bfed-7a3c-9586-6c77012fbf7a",
-		Text:      "Comment under second post hahaha",
+		Text:      "under second post hahaha",
 		CreatedAt: time.Now(),
 	})
+	inm.comments.Store("0194e628-e4f2-75e9-bc33-0601f9a6d4bc", &models.Comment{
+		ID:        "0194e628-e4f2-75e9-bc33-0601f9a6d4bc",
+		PostID:    "2",
+		ParentID:  nil,
+		AuthorID:  "0194e611-bfed-7a3c-9587-6c77012fbf7a",
+		Text:      "from other user",
+		CreatedAt: time.Now(),
+	})
+	parentID := "0194e628-e4f2-75e9-bc32-0601f9a6d4bc"
+	inm.comments.Store("0194efaf-1171-7c9a-8ea1-f76a2dfd67b4", &models.Comment{
+		ID:        "0194efaf-1171-7c9a-8ea1-f76a2dfd67b4",
+		PostID:    "2",
+		ParentID:  &parentID,
+		AuthorID:  "0194e611-bfed-7a3c-9586-6c77012fbf7a",
+		Text:      "Comment under comment",
+		CreatedAt: time.Now(),
+	})
+	inm.comments.Store("0194efaf-1171-7b9a-8ea1-f76a2dfd67b4", &models.Comment{
+		ID:        "0194efaf-1171-7b9a-8ea1-f76a2dfd67b4",
+		PostID:    "2",
+		ParentID:  &parentID,
+		AuthorID:  "0194e611-bfed-7a3c-9586-6c77012fbf7a",
+		Text:      "comment under comment 2",
+		CreatedAt: time.Now(),
+	})
+	parentID2 := "0194efaf-1171-7b9a-8ea1-f76a2dfd67b4"
+	inm.comments.Store("0004efaf-1171-7b9a-8ea1-f76a2dfd67b4", &models.Comment{
+		ID:        "0004efaf-1171-7b9a-8ea1-f76a2dfd67b4",
+		PostID:    "2",
+		ParentID:  &parentID2,
+		AuthorID:  "0194e611-bfed-7a3c-9586-6c77012fbf7a",
+		Text:      "Comment under reply comment",
+		CreatedAt: time.Now(),
+	})
+
 	//ticker := time.NewTicker(2 * time.Second)
 	//go func() {
 	//	for {
@@ -152,7 +187,7 @@ func (r *InMemoryRepository) GetCommentsByPostID(ctx context.Context, postID str
 	r.comments.Range(func(key, value interface{}) bool {
 		if counter >= offset {
 			comment := value.(*models.Comment)
-			if comment.PostID == postID {
+			if comment.PostID == postID && comment.ParentID == nil {
 				counter++
 				comments = append(comments, comment)
 			}
@@ -254,7 +289,7 @@ func (r *InMemoryRepository) GetCommentsByPostIDs(ctx context.Context, ids []str
 	}
 	r.comments.Range(func(key, value interface{}) bool {
 		comment := value.(*models.Comment)
-		if _, ok := idsSet[comment.PostID]; ok {
+		if _, ok := idsSet[comment.PostID]; ok && comment.ParentID == nil {
 			comments = append(comments, comment)
 		}
 		return true
@@ -299,7 +334,7 @@ func (r *InMemoryRepository) GetCommentsByParentIDs(ctx context.Context, ids []s
 
 	idsSet := map[string]struct{}{}
 	for _, id := range ids {
-		if _, err := r.GetPostByID(ctx, id); err == nil {
+		if _, err := r.GetCommentByID(ctx, id); err == nil {
 			idsSet[id] = struct{}{}
 		}
 	}
@@ -349,7 +384,7 @@ func (r *InMemoryRepository) GetCommentsByPostAuthorID(ctx context.Context, post
 	r.comments.Range(func(key, value interface{}) bool {
 		if counter >= offset {
 			comment := value.(*models.Comment)
-			if comment.PostID == postID && comment.AuthorID == authorID {
+			if comment.PostID == postID && comment.AuthorID == authorID && comment.ParentID == nil {
 				counter++
 				comments = append(comments, comment)
 			}

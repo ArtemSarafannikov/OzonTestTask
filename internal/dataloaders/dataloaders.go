@@ -10,9 +10,7 @@ import (
 type DataLoaders struct {
 	UserLoader              *UserLoader
 	PostLoader              *PostLoader
-	CommentLoader           *CommentLoader
 	CommentByPostIDLoader   *CommentByPostIDLoader
-	CommentByAuthorIDLoader *CommentByAuthorIDLoader
 	CommentByParentIDLoader *CommentByParentIDLoader
 }
 
@@ -51,23 +49,6 @@ func NewDataLoaders(repo repository.Repository) *DataLoaders {
 	}
 	postLoader := NewPostLoader(postConfig)
 
-	commentConfig := CommentLoaderConfig{
-		Wait:     1 * time.Millisecond,
-		MaxBatch: 100,
-		Fetch: func(keys []string) ([]*models.Comment, []error) {
-			comments, err := repo.GetCommentsByIDs(context.Background(), keys)
-			if err != nil {
-				errs := make([]error, len(keys))
-				for i := range errs {
-					errs[i] = err
-				}
-				return nil, errs
-			}
-			return comments, nil
-		},
-	}
-	commentLoader := NewCommentLoader(commentConfig)
-
 	commentByPostConfig := CommentByPostIDLoaderConfig{
 		Wait:     1 * time.Millisecond,
 		MaxBatch: 100,
@@ -94,32 +75,6 @@ func NewDataLoaders(repo repository.Repository) *DataLoaders {
 	}
 	commentByPostLoader := NewCommentByPostIDLoader(commentByPostConfig)
 
-	commentByAuthorConfig := CommentByAuthorIDLoaderConfig{
-		Wait:     1 * time.Millisecond,
-		MaxBatch: 100,
-		Fetch: func(keys []string) ([][]*models.Comment, []error) {
-			comments, err := repo.GetCommentsByAuthorIDs(context.Background(), keys)
-			if err != nil {
-				errs := make([]error, len(keys))
-				for i := range errs {
-					errs[i] = err
-				}
-				return nil, errs
-			}
-			commentsByAuthor := make(map[string][]*models.Comment)
-			for _, comment := range comments {
-				commentsByAuthor[comment.AuthorID] = append(commentsByAuthor[comment.AuthorID], comment)
-			}
-
-			result := make([][]*models.Comment, len(keys))
-			for i, key := range keys {
-				result[i] = commentsByAuthor[key]
-			}
-			return result, nil
-		},
-	}
-	commentByAuthorLoader := NewCommentByAuthorIDLoader(commentByAuthorConfig)
-
 	commentByParentConfig := CommentByParentIDLoaderConfig{
 		Wait:     1 * time.Millisecond,
 		MaxBatch: 100,
@@ -134,7 +89,9 @@ func NewDataLoaders(repo repository.Repository) *DataLoaders {
 			}
 			commentsByParent := make(map[string][]*models.Comment)
 			for _, comment := range comments {
-				commentsByParent[comment.AuthorID] = append(commentsByParent[*comment.ParentID], comment)
+				if comment.ParentID != nil {
+					commentsByParent[*comment.ParentID] = append(commentsByParent[*comment.ParentID], comment)
+				}
 			}
 
 			result := make([][]*models.Comment, len(keys))
@@ -149,9 +106,7 @@ func NewDataLoaders(repo repository.Repository) *DataLoaders {
 	return &DataLoaders{
 		UserLoader:              userLoader,
 		PostLoader:              postLoader,
-		CommentLoader:           commentLoader,
 		CommentByPostIDLoader:   commentByPostLoader,
-		CommentByAuthorIDLoader: commentByAuthorLoader,
 		CommentByParentIDLoader: commentByParentLoader,
 	}
 }

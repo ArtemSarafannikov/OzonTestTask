@@ -38,6 +38,7 @@ func (r *commentResolver) CreatedAt(ctx context.Context, obj *models.Comment) (s
 
 // Replies is the resolver for the replies field.
 func (r *commentResolver) Replies(ctx context.Context, obj *models.Comment, limit *int, offset *int) ([]*models.Comment, error) {
+	//return r.CommentService.GetReplies(ctx, obj.ID, *limit, *offset)
 	loader := ctx.Value(utils.DataLoadersCtxKey).(*dataloaders.DataLoaders).CommentByParentIDLoader
 	return loader.Load(obj.ID)
 }

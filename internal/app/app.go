@@ -72,7 +72,7 @@ func (a *App) SetupHandlers(repo repository.Repository,
 	defaultServer := handler.NewDefaultServer(
 		graphql.NewExecutableSchema(graphql.NewRootResolver(postService, userService, commentService, pubSub)),
 	)
-	defaultServer.Use(extension.FixedComplexityLimit(100))
+	defaultServer.Use(extension.FixedComplexityLimit(1000))
 	rootHandler := middlewares.DataloaderMiddleware(repo, defaultServer)
 
 	http.Handle("/query", middlewares.AuthMiddleware(rootHandler))
