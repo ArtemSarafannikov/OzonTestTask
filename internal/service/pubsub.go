@@ -1,7 +1,6 @@
 package service
 
 import (
-	"fmt"
 	"github.com/ArtemSarafannikov/OzonTestTask/internal/models"
 	"sync"
 )
@@ -31,7 +30,6 @@ func (p *PubSub) Subscribe(postID string) (<-chan *models.Comment, func()) {
 
 	p.mu.Lock()
 	p.subscribers[postID] = append(p.subscribers[postID], ch)
-	fmt.Println(p.subscribers)
 	p.mu.Unlock()
 
 	unsubscribe := func() {

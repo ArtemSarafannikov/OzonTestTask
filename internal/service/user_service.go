@@ -41,11 +41,11 @@ func (s *UserService) Login(ctx context.Context, login string, password string) 
 
 	user, err = s.repo.GetUserByLogin(ctx, login)
 	if err != nil {
-		return token, user, cstErrors.InvalidCredentials
+		return token, nil, cstErrors.InvalidCredentials
 	}
 
 	if !utils.CheckPasswordHash(password, user.Password) {
-		return token, user, cstErrors.InvalidCredentials
+		return token, nil, cstErrors.InvalidCredentials
 	}
 
 	go s.repo.FixLastActivity(ctx, user.ID)

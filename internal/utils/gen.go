@@ -16,7 +16,8 @@ func GenerateNewID() (string, error) {
 	return id.String(), err
 }
 
-func GenerateJWT(userID string) (string, error) {
+// GenerateJWT This function maded as a variable for tests
+var GenerateJWT = func(userID string) (string, error) {
 	JWTSecret, exist := os.LookupEnv("JWT_SECRET")
 	if !exist {
 		return "", cstErrors.NoJWTSecretError
@@ -28,3 +29,16 @@ func GenerateJWT(userID string) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	return token.SignedString([]byte(JWTSecret))
 }
+
+//func GenerateJWT(userID string) (string, error) {
+//	JWTSecret, exist := os.LookupEnv("JWT_SECRET")
+//	if !exist {
+//		return "", cstErrors.NoJWTSecretError
+//	}
+//	claims := &jwt.RegisteredClaims{
+//		Subject:   userID,
+//		ExpiresAt: jwt.NewNumericDate(time.Now().Add(24 * time.Hour)),
+//	}
+//	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+//	return token.SignedString([]byte(JWTSecret))
+//}

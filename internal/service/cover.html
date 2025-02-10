@@ -1,0 +1,364 @@
+
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<title>service: Go Coverage Report</title>
+		<style>
+			body {
+				background: black;
+				color: rgb(80, 80, 80);
+			}
+			body, pre, #legend span {
+				font-family: Menlo, monospace;
+				font-weight: bold;
+			}
+			#topbar {
+				background: black;
+				position: fixed;
+				top: 0; left: 0; right: 0;
+				height: 42px;
+				border-bottom: 1px solid rgb(80, 80, 80);
+			}
+			#content {
+				margin-top: 50px;
+			}
+			#nav, #legend {
+				float: left;
+				margin-left: 10px;
+			}
+			#legend {
+				margin-top: 12px;
+			}
+			#nav {
+				margin-top: 10px;
+			}
+			#legend span {
+				margin: 0 5px;
+			}
+			.cov0 { color: rgb(192, 0, 0) }
+.cov1 { color: rgb(128, 128, 128) }
+.cov2 { color: rgb(116, 140, 131) }
+.cov3 { color: rgb(104, 152, 134) }
+.cov4 { color: rgb(92, 164, 137) }
+.cov5 { color: rgb(80, 176, 140) }
+.cov6 { color: rgb(68, 188, 143) }
+.cov7 { color: rgb(56, 200, 146) }
+.cov8 { color: rgb(44, 212, 149) }
+.cov9 { color: rgb(32, 224, 152) }
+.cov10 { color: rgb(20, 236, 155) }
+
+		</style>
+	</head>
+	<body>
+		<div id="topbar">
+			<div id="nav">
+				<select id="files">
+				
+				<option value="file0">github.com/ArtemSarafannikov/OzonTestTask/internal/service/comment_service.go (100.0%)</option>
+				
+				<option value="file1">github.com/ArtemSarafannikov/OzonTestTask/internal/service/post_service.go (100.0%)</option>
+				
+				<option value="file2">github.com/ArtemSarafannikov/OzonTestTask/internal/service/pubsub.go (100.0%)</option>
+				
+				<option value="file3">github.com/ArtemSarafannikov/OzonTestTask/internal/service/user_service.go (100.0%)</option>
+				
+				</select>
+			</div>
+			<div id="legend">
+				<span>not tracked</span>
+			
+				<span class="cov0">not covered</span>
+				<span class="cov8">covered</span>
+			
+			</div>
+		</div>
+		<div id="content">
+		
+		<pre class="file" id="file0" style="display: none">package service
+
+import (
+        "context"
+        cstErrors "github.com/ArtemSarafannikov/OzonTestTask/internal/errors"
+        "github.com/ArtemSarafannikov/OzonTestTask/internal/models"
+        "github.com/ArtemSarafannikov/OzonTestTask/internal/repository"
+        "github.com/ArtemSarafannikov/OzonTestTask/internal/utils"
+)
+
+type CommentService struct {
+        repo repository.Repository
+}
+
+func NewCommentService(repo repository.Repository) *CommentService <span class="cov8" title="1">{
+        return &amp;CommentService{repo: repo}
+}</span>
+
+func (s *CommentService) GetComments(ctx context.Context, postID string, authorID *string, limit, offset int) ([]*models.Comment, error) <span class="cov8" title="1">{
+        if authorID == nil </span><span class="cov8" title="1">{
+                return s.repo.GetCommentsByPostID(ctx, postID, limit, offset)
+        }</span>
+        <span class="cov8" title="1">return s.repo.GetCommentsByPostAuthorID(ctx, postID, *authorID, limit, offset)</span>
+}
+
+func (s *CommentService) GetCommentByID(ctx context.Context, commentID string) (*models.Comment, error) <span class="cov8" title="1">{
+        return s.repo.GetCommentByID(ctx, commentID)
+}</span>
+
+func (s *CommentService) GetReplies(ctx context.Context, commentID string, limit, offset int) ([]*models.Comment, error) <span class="cov8" title="1">{
+        return s.repo.GetCommentsByCommentID(ctx, commentID, limit, offset)
+}</span>
+
+func (s *CommentService) CreateComment(ctx context.Context, text, postID string, parentID *string) (*models.Comment, error) <span class="cov8" title="1">{
+        post, err := s.repo.GetPostByID(ctx, postID)
+        if err != nil </span><span class="cov8" title="1">{
+                return nil, err
+        }</span>
+        <span class="cov8" title="1">if !post.AllowComments </span><span class="cov8" title="1">{
+                return nil, cstErrors.PermissionDeniedError
+        }</span>
+
+        // Needed????
+        <span class="cov8" title="1">if parentID != nil </span><span class="cov8" title="1">{
+                parent, err := s.repo.GetCommentByID(ctx, *parentID)
+                if err != nil </span><span class="cov8" title="1">{
+                        return nil, err
+                }</span>
+                <span class="cov8" title="1">if parent.PostID != post.ID </span><span class="cov8" title="1">{
+                        return nil, cstErrors.CommentNotInPostError
+                }</span>
+        }
+        <span class="cov8" title="1">comment := &amp;models.Comment{
+                PostID:   postID,
+                ParentID: parentID,
+                AuthorID: utils.UserIDFromContext(ctx),
+                Text:     text,
+        }
+        return s.repo.CreateComment(ctx, comment)</span>
+}
+</pre>
+		
+		<pre class="file" id="file1" style="display: none">package service
+
+import (
+        "context"
+        cstErrors "github.com/ArtemSarafannikov/OzonTestTask/internal/errors"
+        "github.com/ArtemSarafannikov/OzonTestTask/internal/models"
+        "github.com/ArtemSarafannikov/OzonTestTask/internal/repository"
+        "github.com/ArtemSarafannikov/OzonTestTask/internal/utils"
+)
+
+type PostService struct {
+        repo repository.Repository
+}
+
+func NewPostService(repo repository.Repository) *PostService <span class="cov8" title="1">{
+        return &amp;PostService{repo: repo}
+}</span>
+
+func (s *PostService) GetPosts(ctx context.Context, authorID *string, limit, offset int) ([]*models.Post, error) <span class="cov8" title="1">{
+        if authorID == nil </span><span class="cov8" title="1">{
+                return s.repo.GetPosts(ctx, limit, offset)
+        }</span>
+        <span class="cov8" title="1">return s.repo.GetPostsByAuthorID(ctx, *authorID, limit, offset)</span>
+}
+
+func (s *PostService) GetPostByID(ctx context.Context, id string) (*models.Post, error) <span class="cov8" title="1">{
+        return s.repo.GetPostByID(ctx, id)
+}</span>
+
+func (s *PostService) CreatePost(ctx context.Context, title, content string, allowComment bool) (*models.Post, error) <span class="cov8" title="1">{
+        post := &amp;models.Post{
+                Title:         title,
+                Content:       content,
+                AllowComments: allowComment,
+                AuthorID:      utils.UserIDFromContext(ctx),
+        }
+        return s.repo.CreatePost(ctx, post)
+}</span>
+
+func (s *PostService) EditPost(ctx context.Context, postID string, title, content *string, allowComment *bool) (*models.Post, error) <span class="cov8" title="1">{
+        post, err := s.repo.GetPostByID(ctx, postID)
+        if err != nil </span><span class="cov8" title="1">{
+                return nil, err
+        }</span>
+        <span class="cov8" title="1">userID := utils.UserIDFromContext(ctx)
+        if post.AuthorID != userID </span><span class="cov8" title="1">{
+                return nil, cstErrors.PermissionDeniedError
+        }</span>
+
+        <span class="cov8" title="1">if title != nil </span><span class="cov8" title="1">{
+                post.Title = *title
+        }</span>
+        <span class="cov8" title="1">if content != nil </span><span class="cov8" title="1">{
+                post.Content = *content
+        }</span>
+        <span class="cov8" title="1">if allowComment != nil </span><span class="cov8" title="1">{
+                post.AllowComments = *allowComment
+        }</span>
+        <span class="cov8" title="1">go s.repo.UpdatePost(ctx, post)
+        return post, nil</span>
+}
+</pre>
+		
+		<pre class="file" id="file2" style="display: none">package service
+
+import (
+        "github.com/ArtemSarafannikov/OzonTestTask/internal/models"
+        "sync"
+)
+
+type PubSub struct {
+        mu          sync.RWMutex
+        subscribers map[string][]chan *models.Comment
+        publishCh   chan publishEvent
+}
+
+type publishEvent struct {
+        postID  string
+        comment *models.Comment
+}
+
+func NewPubSub() *PubSub <span class="cov8" title="1">{
+        pb := &amp;PubSub{
+                subscribers: make(map[string][]chan *models.Comment),
+                publishCh:   make(chan publishEvent, 50),
+        }
+        go pb.startPublisher()
+        return pb
+}</span>
+
+func (p *PubSub) Subscribe(postID string) (&lt;-chan *models.Comment, func()) <span class="cov8" title="1">{
+        ch := make(chan *models.Comment, 1)
+
+        p.mu.Lock()
+        p.subscribers[postID] = append(p.subscribers[postID], ch)
+        p.mu.Unlock()
+
+        unsubscribe := func() </span><span class="cov8" title="1">{
+                p.mu.Lock()
+                defer p.mu.Unlock()
+
+                subs := p.subscribers[postID]
+                for i, c := range subs </span><span class="cov8" title="1">{
+                        if c == ch </span><span class="cov8" title="1">{
+                                p.subscribers[postID] = append(subs[:i], subs[i+1:]...)
+                                break</span>
+                        }
+                }
+                <span class="cov8" title="1">close(ch)</span>
+        }
+        <span class="cov8" title="1">return ch, unsubscribe</span>
+}
+
+func (p *PubSub) Publish(postID string, comment *models.Comment) <span class="cov8" title="1">{
+        p.publishCh &lt;- publishEvent{postID, comment}
+}</span>
+
+func (p *PubSub) startPublisher() <span class="cov8" title="1">{
+        for event := range p.publishCh </span><span class="cov8" title="1">{
+                p.mu.RLock()
+                subs := p.subscribers[event.postID]
+                p.mu.RUnlock()
+
+                for _, ch := range subs </span><span class="cov8" title="1">{
+                        select </span>{
+                        case ch &lt;- event.comment:<span class="cov8" title="1"></span>
+                        default:<span class="cov0" title="0"></span>
+                        }
+                }
+        }
+}
+</pre>
+		
+		<pre class="file" id="file3" style="display: none">package service
+
+import (
+        "context"
+        "github.com/ArtemSarafannikov/OzonTestTask/internal/errors"
+        "github.com/ArtemSarafannikov/OzonTestTask/internal/models"
+        "github.com/ArtemSarafannikov/OzonTestTask/internal/repository"
+        "github.com/ArtemSarafannikov/OzonTestTask/internal/utils"
+)
+
+type UserService struct {
+        repo repository.Repository
+}
+
+func NewUserService(repo repository.Repository) *UserService <span class="cov8" title="1">{
+        return &amp;UserService{repo: repo}
+}</span>
+
+func (s *UserService) Register(ctx context.Context, login string, password string) (token string, user *models.User, err error) <span class="cov8" title="1">{
+        user = &amp;models.User{}
+
+        hashedPassword, err := utils.HashPassword(password)
+        if err != nil </span><span class="cov8" title="1">{
+                return token, user, err
+        }</span>
+
+        <span class="cov8" title="1">user.Username = login
+        user.Password = hashedPassword
+
+        user, err = s.repo.CreateUser(ctx, user)
+        if err != nil </span><span class="cov8" title="1">{
+                return token, user, err
+        }</span>
+
+        <span class="cov8" title="1">token, err = utils.GenerateJWT(user.ID)
+        return token, user, nil</span>
+}
+
+func (s *UserService) Login(ctx context.Context, login string, password string) (token string, user *models.User, err error) <span class="cov8" title="1">{
+        user = &amp;models.User{}
+
+        user, err = s.repo.GetUserByLogin(ctx, login)
+        if err != nil </span><span class="cov8" title="1">{
+                return token, nil, cstErrors.InvalidCredentials
+        }</span>
+
+        <span class="cov8" title="1">if !utils.CheckPasswordHash(password, user.Password) </span><span class="cov8" title="1">{
+                return token, nil, cstErrors.InvalidCredentials
+        }</span>
+
+        <span class="cov8" title="1">go s.repo.FixLastActivity(ctx, user.ID)
+
+        token, err = utils.GenerateJWT(user.ID)
+        return token, user, err</span>
+}
+
+func (s *UserService) GetUserByID(ctx context.Context, id string) (user *models.User, err error) <span class="cov8" title="1">{
+        user, err = s.repo.GetUserByID(ctx, id)
+        return user, err
+}</span>
+</pre>
+		
+		</div>
+	</body>
+	<script>
+	(function() {
+		var files = document.getElementById('files');
+		var visible;
+		files.addEventListener('change', onChange, false);
+		function select(part) {
+			if (visible)
+				visible.style.display = 'none';
+			visible = document.getElementById(part);
+			if (!visible)
+				return;
+			files.value = part;
+			visible.style.display = 'block';
+			location.hash = part;
+		}
+		function onChange() {
+			select(files.value);
+			window.scrollTo(0, 0);
+		}
+		if (location.hash != "") {
+			select(location.hash.substr(1));
+		}
+		if (!visible) {
+			select("file0");
+		}
+	})();
+	</script>
+</html>
