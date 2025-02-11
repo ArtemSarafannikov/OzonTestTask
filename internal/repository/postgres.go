@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"github.com/ArtemSarafannikov/OzonTestTask/internal/config"
 	cstErrors "github.com/ArtemSarafannikov/OzonTestTask/internal/errors"
 	"github.com/ArtemSarafannikov/OzonTestTask/internal/models"
 	"github.com/lib/pq"
@@ -15,10 +16,10 @@ type PostgresRepository struct {
 	db *sql.DB
 }
 
-func NewPostgresRepository() (*PostgresRepository, error) {
-	// TODO: add config params
-	// TODO: add logger for all methods
-	db, err := sql.Open("postgres", "postgres://postgres:postgres@localhost:5432/post_db?sslmode=disable")
+func NewPostgresRepository(cfg config.DatabaseConfig) (*PostgresRepository, error) {
+	conn := fmt.Sprintf("postgres://%s:%s@%s/%s?sslmode=%s",
+		cfg.User, cfg.Password, cfg.Address, cfg.Name, cfg.SSLMode)
+	db, err := sql.Open("postgres", conn)
 	if err != nil {
 		return nil, err
 	}
@@ -165,13 +166,10 @@ func (p *PostgresRepository) UpdatePost(ctx context.Context, post *models.Post) 
 
 	stmt, err := p.db.PrepareContext(ctx, query)
 	if err != nil {
-		// TODO: add logger
 		return
 	}
 
-	if _, err = stmt.ExecContext(ctx, post.Title, post.Content, post.AllowComments, post.ID); err != nil {
-		// TODO: add logger
-	}
+	stmt.ExecContext(ctx, post.Title, post.Content, post.AllowComments, post.ID)
 }
 
 func (p *PostgresRepository) GetCommentsByPostID(ctx context.Context, postID string, limit, offset int) ([]*models.Comment, error) {

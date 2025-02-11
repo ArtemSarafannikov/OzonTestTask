@@ -4,7 +4,7 @@ import "golang.org/x/crypto/bcrypt"
 
 // HashPassword This function maded as a variable for testutils
 var HashPassword = func(password string) (string, error) {
-	bytes, err := bcrypt.GenerateFromPassword([]byte(password), 14)
+	bytes, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	return string(bytes), err
 }
 
@@ -15,7 +15,7 @@ var CheckPasswordHash = func(password, hash string) bool {
 }
 
 //func HashPassword(password string) (string, error) {
-//	bytes, err := bcrypt.GenerateFromPassword([]byte(password), 14)
+//	bytes, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 //	return string(bytes), err
 //}
 //

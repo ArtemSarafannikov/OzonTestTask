@@ -37,7 +37,7 @@ func New(log *slog.Logger, config *config.Config) *App {
 		repo = repository.NewInMemoryRepository()
 	} else if config.StorageType == utils.PostgresStorage {
 		var err error
-		repo, err = repository.NewPostgresRepository()
+		repo, err = repository.NewPostgresRepository(config.Storage)
 		if err != nil {
 			panic(err)
 		}
@@ -49,9 +49,9 @@ func New(log *slog.Logger, config *config.Config) *App {
 		Addr: fmt.Sprintf(":%d", config.Port),
 	}
 
-	postService := service.NewPostService(repo)
-	userService := service.NewUserService(repo)
-	commentService := service.NewCommentService(repo)
+	postService := service.NewPostService(log, repo)
+	userService := service.NewUserService(log, repo)
+	commentService := service.NewCommentService(log, repo)
 	pubSub := service.NewPubSub()
 
 	app := &App{

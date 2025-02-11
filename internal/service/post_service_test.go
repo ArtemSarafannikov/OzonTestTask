@@ -8,6 +8,8 @@ import (
 	"github.com/ArtemSarafannikov/OzonTestTask/internal/testutils"
 	"github.com/ArtemSarafannikov/OzonTestTask/internal/utils"
 	"github.com/stretchr/testify/require"
+	"log/slog"
+	"os"
 	"testing"
 	"time"
 )
@@ -23,7 +25,10 @@ func TestPostService_GetPosts_NoAuthor(t *testing.T) {
 			}, nil
 		},
 	}
-	svc := NewPostService(fakeRepo)
+	log := slog.New(
+		slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}),
+	)
+	svc := NewPostService(log, fakeRepo)
 	posts, err := svc.GetPosts(ctx, nil, 10, 0)
 	require.NoError(t, err)
 	require.Len(t, posts, 2)
@@ -43,7 +48,10 @@ func TestPostService_GetPosts_WithAuthor(t *testing.T) {
 			return nil, nil
 		},
 	}
-	svc := NewPostService(fakeRepo)
+	log := slog.New(
+		slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}),
+	)
+	svc := NewPostService(log, fakeRepo)
 	author := "a1"
 	posts, err := svc.GetPosts(ctx, &author, 10, 0)
 	require.NoError(t, err)
@@ -64,7 +72,10 @@ func TestPostService_GetPostByID(t *testing.T) {
 			return nil, errors.New("post not found")
 		},
 	}
-	svc := NewPostService(fakeRepo)
+	log := slog.New(
+		slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}),
+	)
+	svc := NewPostService(log, fakeRepo)
 	post, err := svc.GetPostByID(ctx, "p1")
 	require.NoError(t, err)
 	require.NotNil(t, post)
@@ -83,7 +94,10 @@ func TestPostService_CreatePost_Success(t *testing.T) {
 			return post, nil
 		},
 	}
-	svc := NewPostService(fakeRepo)
+	log := slog.New(
+		slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}),
+	)
+	svc := NewPostService(log, fakeRepo)
 	post, err := svc.CreatePost(ctx, "New Title", "New Content", true)
 	require.NoError(t, err)
 	require.NotNil(t, post)
@@ -109,7 +123,10 @@ func TestPostService_EditPost_Success(t *testing.T) {
 			return nil, errors.New("post not found")
 		},
 	}
-	svc := NewPostService(fakeRepo)
+	log := slog.New(
+		slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}),
+	)
+	svc := NewPostService(log, fakeRepo)
 	newTitle := "New Title"
 	newContent := "New Content"
 	newAllow := false
@@ -128,7 +145,10 @@ func TestPostService_EditPost_GetPostError(t *testing.T) {
 			return nil, errors.New("post not found")
 		},
 	}
-	svc := NewPostService(fakeRepo)
+	log := slog.New(
+		slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}),
+	)
+	svc := NewPostService(log, fakeRepo)
 	newTitle := "New Title"
 	editedPost, err := svc.EditPost(ctx, "p1", &newTitle, nil, nil)
 	require.Error(t, err)
@@ -148,7 +168,10 @@ func TestPostService_EditPost_PermissionDenied(t *testing.T) {
 			return initialPost, nil
 		},
 	}
-	svc := NewPostService(fakeRepo)
+	log := slog.New(
+		slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}),
+	)
+	svc := NewPostService(log, fakeRepo)
 	newTitle := "New Title"
 	editedPost, err := svc.EditPost(ctx, "p1", &newTitle, nil, nil)
 	require.Error(t, err)

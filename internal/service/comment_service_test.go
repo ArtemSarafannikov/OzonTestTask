@@ -7,6 +7,8 @@ import (
 	"github.com/ArtemSarafannikov/OzonTestTask/internal/models"
 	"github.com/ArtemSarafannikov/OzonTestTask/internal/testutils"
 	"github.com/ArtemSarafannikov/OzonTestTask/internal/utils"
+	"log/slog"
+	"os"
 	"testing"
 	"time"
 
@@ -37,7 +39,10 @@ func TestCommentService_GetComments_NoAuthor(t *testing.T) {
 			}, nil
 		},
 	}
-	svc := NewCommentService(fakeRepo)
+	log := slog.New(
+		slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}),
+	)
+	svc := NewCommentService(log, fakeRepo)
 	comments, err := svc.GetComments(ctx, "post1", nil, 10, 0)
 	require.NoError(t, err)
 	require.Len(t, comments, 2)
@@ -64,7 +69,10 @@ func TestCommentService_GetComments_WithAuthor(t *testing.T) {
 			return nil, nil
 		},
 	}
-	svc := NewCommentService(fakeRepo)
+	log := slog.New(
+		slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}),
+	)
+	svc := NewCommentService(log, fakeRepo)
 	authorID := "a1"
 	comments, err := svc.GetComments(ctx, "post1", &authorID, 10, 0)
 	require.NoError(t, err)
@@ -91,7 +99,10 @@ func TestCommentService_GetCommentByID_Success(t *testing.T) {
 			return nil, errors.New("не найден")
 		},
 	}
-	svc := NewCommentService(fakeRepo)
+	log := slog.New(
+		slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}),
+	)
+	svc := NewCommentService(log, fakeRepo)
 	comment, err := svc.GetCommentByID(ctx, "c1")
 	require.NoError(t, err)
 	require.Equal(t, expected, comment)
@@ -123,7 +134,10 @@ func TestCommentService_GetReplies_Success(t *testing.T) {
 			}, nil
 		},
 	}
-	svc := NewCommentService(fakeRepo)
+	log := slog.New(
+		slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}),
+	)
+	svc := NewCommentService(log, fakeRepo)
 	replies, err := svc.GetReplies(ctx, "c1", 10, 0)
 	require.NoError(t, err)
 	require.Len(t, replies, 2)
@@ -167,7 +181,10 @@ func TestCommentService_CreateComment_Success(t *testing.T) {
 		},
 	}
 
-	svc := NewCommentService(fakeRepo)
+	log := slog.New(
+		slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}),
+	)
+	svc := NewCommentService(log, fakeRepo)
 	parentID := "parent1"
 	comment, err := svc.CreateComment(ctx, "New Comment", "post1", &parentID)
 	require.NoError(t, err)
@@ -184,6 +201,9 @@ func TestCommentService_CreateComment_Success(t *testing.T) {
 // Тест создания комментария с возникновением ошибки.
 func TestCommentService_CreateComment_Error(t *testing.T) {
 	now := time.Now()
+	log := slog.New(
+		slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}),
+	)
 
 	t.Run("GetPostByID error", func(t *testing.T) {
 		ctx := context.WithValue(context.Background(), utils.UserIdCtxKey, "test_author")
@@ -192,7 +212,7 @@ func TestCommentService_CreateComment_Error(t *testing.T) {
 				return nil, errors.New("post not found")
 			},
 		}
-		svc := NewCommentService(fakeRepo)
+		svc := NewCommentService(log, fakeRepo)
 		comment, err := svc.CreateComment(ctx, "Comment text", "post1", nil)
 		require.Error(t, err)
 		require.Nil(t, comment)
@@ -212,7 +232,7 @@ func TestCommentService_CreateComment_Error(t *testing.T) {
 				}, nil
 			},
 		}
-		svc := NewCommentService(fakeRepo)
+		svc := NewCommentService(log, fakeRepo)
 		comment, err := svc.CreateComment(ctx, "Comment text", "post1", nil)
 		require.Error(t, err)
 		require.Nil(t, comment)
@@ -236,7 +256,7 @@ func TestCommentService_CreateComment_Error(t *testing.T) {
 				return nil, errors.New("parent comment not found")
 			},
 		}
-		svc := NewCommentService(fakeRepo)
+		svc := NewCommentService(log, fakeRepo)
 		parentID := "invalid_parent"
 		comment, err := svc.CreateComment(ctx, "Comment text", "post1", &parentID)
 		require.Error(t, err)
@@ -267,7 +287,7 @@ func TestCommentService_CreateComment_Error(t *testing.T) {
 				}, nil
 			},
 		}
-		svc := NewCommentService(fakeRepo)
+		svc := NewCommentService(log, fakeRepo)
 		parentID := "parent1"
 		comment, err := svc.CreateComment(ctx, "Comment text", "post1", &parentID)
 		require.Error(t, err)
@@ -292,7 +312,7 @@ func TestCommentService_CreateComment_Error(t *testing.T) {
 				return nil, errors.New("create comment failed")
 			},
 		}
-		svc := NewCommentService(fakeRepo)
+		svc := NewCommentService(log, fakeRepo)
 		comment, err := svc.CreateComment(ctx, "Comment text", "post1", nil)
 		require.Error(t, err)
 		require.Nil(t, comment)

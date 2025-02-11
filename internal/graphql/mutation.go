@@ -12,7 +12,8 @@ func (r *Resolver) Mutation() MutationResolver { return &mutationResolver{r} }
 type mutationResolver struct{ *Resolver }
 
 func (r *mutationResolver) CreatePost(ctx context.Context, post CreatePostInput) (*models.Post, error) {
-	return r.PostService.CreatePost(ctx, post.Title, post.Content, *post.AllowComments)
+	newPost, err := r.PostService.CreatePost(ctx, post.Title, post.Content, *post.AllowComments)
+	return newPost, cstErrors.GetCustomError(err)
 }
 
 // CreateComment is the resolver for the createComment field.
@@ -22,7 +23,7 @@ func (r *mutationResolver) CreateComment(ctx context.Context, comment CreateComm
 	}
 	newComment, err := r.CommentService.CreateComment(ctx, comment.Text, comment.PostID, comment.ParentCommentID)
 	if err != nil {
-		return nil, err
+		return nil, cstErrors.GetCustomError(err)
 	}
 	r.PubSub.Publish(comment.PostID, newComment)
 	return newComment, err
@@ -30,7 +31,8 @@ func (r *mutationResolver) CreateComment(ctx context.Context, comment CreateComm
 
 // EditPost is the resolver for the editPost field.
 func (r *mutationResolver) EditPost(ctx context.Context, newPost EditPostInput) (*models.Post, error) {
-	return r.PostService.EditPost(ctx, newPost.PostID, newPost.Title, newPost.Content, newPost.AllowComments)
+	post, err := r.PostService.EditPost(ctx, newPost.PostID, newPost.Title, newPost.Content, newPost.AllowComments)
+	return post, cstErrors.GetCustomError(err)
 }
 
 func (r *mutationResolver) Register(ctx context.Context, login string, password string) (*AuthPayload, error) {
@@ -39,7 +41,7 @@ func (r *mutationResolver) Register(ctx context.Context, login string, password 
 		Token: token,
 		User:  user,
 	}
-	return payload, err
+	return payload, cstErrors.GetCustomError(err)
 }
 
 func (r *mutationResolver) Login(ctx context.Context, login string, password string) (*AuthPayload, error) {
@@ -48,5 +50,5 @@ func (r *mutationResolver) Login(ctx context.Context, login string, password str
 		Token: token,
 		User:  user,
 	}
-	return payload, err
+	return payload, cstErrors.GetCustomError(err)
 }

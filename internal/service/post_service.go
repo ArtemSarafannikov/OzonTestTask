@@ -6,41 +6,86 @@ import (
 	"github.com/ArtemSarafannikov/OzonTestTask/internal/models"
 	"github.com/ArtemSarafannikov/OzonTestTask/internal/repository"
 	"github.com/ArtemSarafannikov/OzonTestTask/internal/utils"
+	"log/slog"
 )
 
 type PostService struct {
 	repo repository.Repository
+	log  *slog.Logger
 }
 
-func NewPostService(repo repository.Repository) *PostService {
-	return &PostService{repo: repo}
+func NewPostService(log *slog.Logger, repo repository.Repository) *PostService {
+	return &PostService{log: log, repo: repo}
 }
 
 func (s *PostService) GetPosts(ctx context.Context, authorID *string, limit, offset int) ([]*models.Post, error) {
+	const op = "PostService.GetPosts"
+	log := s.log.With(
+		slog.String("op", op),
+	)
+
+	var posts []*models.Post
+	var err error
+
 	if authorID == nil {
-		return s.repo.GetPosts(ctx, limit, offset)
+		posts, err = s.repo.GetPosts(ctx, limit, offset)
+	} else {
+		posts, err = s.repo.GetPostsByAuthorID(ctx, *authorID, limit, offset)
 	}
-	return s.repo.GetPostsByAuthorID(ctx, *authorID, limit, offset)
+	if err != nil && !cstErrors.IsCustomError(err) {
+		log.Error(err.Error())
+	}
+	return posts, err
 }
 
 func (s *PostService) GetPostByID(ctx context.Context, id string) (*models.Post, error) {
-	return s.repo.GetPostByID(ctx, id)
+	const op = "PostService.GetPostByID"
+	log := s.log.With(
+		slog.String("op", op),
+	)
+
+	post, err := s.repo.GetPostByID(ctx, id)
+	if err != nil && !cstErrors.IsCustomError(err) {
+		log.Error(err.Error())
+	}
+	return post, err
 }
 
 func (s *PostService) CreatePost(ctx context.Context, title, content string, allowComment bool) (*models.Post, error) {
+	const op = "PostService.CreatePost"
+	log := s.log.With(
+		slog.String("op", op),
+	)
+
+	userID := utils.UserIDFromContext(ctx)
 	post := &models.Post{
 		Title:         title,
 		Content:       content,
 		AllowComments: allowComment,
-		AuthorID:      utils.UserIDFromContext(ctx),
+		AuthorID:      userID,
 	}
-	return s.repo.CreatePost(ctx, post)
+	post, err := s.repo.CreatePost(ctx, post)
+	if err != nil {
+		if !cstErrors.IsCustomError(err) {
+			log.Error(err.Error())
+		}
+		return nil, err
+	}
+	go s.repo.FixLastActivity(ctx, userID)
+	return post, err
 }
 
 func (s *PostService) EditPost(ctx context.Context, postID string, title, content *string, allowComment *bool) (*models.Post, error) {
-	// FIXME: remove GetPostByID
+	const op = "PostService.EditPost"
+	log := s.log.With(
+		slog.String("op", op),
+	)
+
 	post, err := s.repo.GetPostByID(ctx, postID)
 	if err != nil {
+		if !cstErrors.IsCustomError(err) {
+			log.Error(err.Error())
+		}
 		return nil, err
 	}
 	userID := utils.UserIDFromContext(ctx)
@@ -58,5 +103,6 @@ func (s *PostService) EditPost(ctx context.Context, postID string, title, conten
 		post.AllowComments = *allowComment
 	}
 	go s.repo.UpdatePost(ctx, post)
+	go s.repo.FixLastActivity(ctx, userID)
 	return post, nil
 }

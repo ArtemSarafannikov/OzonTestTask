@@ -8,6 +8,8 @@ import (
 	"github.com/ArtemSarafannikov/OzonTestTask/internal/testutils"
 	"github.com/ArtemSarafannikov/OzonTestTask/internal/utils"
 	"github.com/stretchr/testify/require"
+	"log/slog"
+	"os"
 	"testing"
 	"time"
 )
@@ -40,7 +42,10 @@ func TestUserService_Register_Success(t *testing.T) {
 		},
 	}
 
-	svc := NewUserService(fakeRepo)
+	log := slog.New(
+		slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}),
+	)
+	svc := NewUserService(log, fakeRepo)
 
 	token, user, err := svc.Register(context.Background(), "testuser", "password123")
 	require.NoError(t, err)
@@ -63,7 +68,10 @@ func TestUserService_Register_HashError(t *testing.T) {
 	}
 
 	fakeRepo := &testutils.FakeRepository{}
-	svc := NewUserService(fakeRepo)
+	log := slog.New(
+		slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}),
+	)
+	svc := NewUserService(log, fakeRepo)
 
 	token, _, err := svc.Register(context.Background(), "testuser", "password123")
 	require.Error(t, err)
@@ -94,7 +102,10 @@ func TestUserService_Register_CreateUserError(t *testing.T) {
 			return nil, errors.New("create user failed")
 		},
 	}
-	svc := NewUserService(fakeRepo)
+	log := slog.New(
+		slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}),
+	)
+	svc := NewUserService(log, fakeRepo)
 
 	token, user, err := svc.Register(context.Background(), "testuser", "password123")
 	require.Error(t, err)
@@ -134,7 +145,10 @@ func TestUserService_Login_Success(t *testing.T) {
 			return nil
 		},
 	}
-	svc := NewUserService(fakeRepo)
+	log := slog.New(
+		slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}),
+	)
+	svc := NewUserService(log, fakeRepo)
 	token, user, err := svc.Login(context.Background(), "testuser", "password123")
 	require.NoError(t, err)
 	require.NotNil(t, user)
@@ -161,7 +175,10 @@ func TestUserService_Login_InvalidCredentials_WrongPassword(t *testing.T) {
 			}, nil
 		},
 	}
-	svc := NewUserService(fakeRepo)
+	log := slog.New(
+		slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}),
+	)
+	svc := NewUserService(log, fakeRepo)
 	token, user, err := svc.Login(context.Background(), "testuser", "wrongpassword")
 	require.Error(t, err)
 	require.Equal(t, cstErrors.InvalidCredentials, err)
@@ -176,7 +193,10 @@ func TestUserService_Login_GetUserByLoginError(t *testing.T) {
 			return nil, errors.New("not found")
 		},
 	}
-	svc := NewUserService(fakeRepo)
+	log := slog.New(
+		slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}),
+	)
+	svc := NewUserService(log, fakeRepo)
 	token, user, err := svc.Login(context.Background(), "testuser", "password123")
 	// При ошибке поиска пользователь считается недействительным.
 	require.Error(t, err)
@@ -198,7 +218,10 @@ func TestUserService_GetUserByID(t *testing.T) {
 			return nil, errors.New("user not found")
 		},
 	}
-	svc := NewUserService(fakeRepo)
+	log := slog.New(
+		slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}),
+	)
+	svc := NewUserService(log, fakeRepo)
 	user, err := svc.GetUserByID(context.Background(), "u1")
 	require.NoError(t, err)
 	require.NotNil(t, user)
