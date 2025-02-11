@@ -29,7 +29,7 @@ func NewPostgresRepository() (*PostgresRepository, error) {
 	return &PostgresRepository{db: db}, nil
 }
 
-func (p *PostgresRepository) GetParamsString(params []string) string {
+func (p *PostgresRepository) getParamsString(params []string) string {
 	sb := strings.Builder{}
 	length := len(params)
 	for i := 1; i < length; i++ {
@@ -146,7 +146,7 @@ func (p *PostgresRepository) CreatePost(ctx context.Context, post *models.Post) 
 					VALUES ($1, $2, $3, $4)
 					RETURNING id, created_at`
 
-	row := p.db.QueryRowContext(ctx, query, post.AuthorID, post.Title)
+	row := p.db.QueryRowContext(ctx, query, post.AuthorID, post.Title, post.Content, post.AllowComments)
 	if row.Err() != nil {
 		return nil, fmt.Errorf("%s: %w", op, row.Err())
 	}
@@ -409,15 +409,20 @@ func (p *PostgresRepository) FixLastActivity(ctx context.Context, id string) err
 func (p *PostgresRepository) GetUsersByIDs(ctx context.Context, ids []string) ([]*models.User, error) {
 	const op = "postgres.GetUsersByIDs"
 
-	params := p.GetParamsString(ids)
+	params := p.getParamsString(ids)
 
 	query := fmt.Sprintf(`SELECT id, login, password, last_activity, created_at
        FROM users
        WHERE id IN (%s)
        ORDER BY created_at DESC`, params)
 
+	idsInterface := make([]interface{}, len(ids))
+	for i, id := range ids {
+		idsInterface[i] = id
+	}
+
 	var err error
-	rows, err := p.db.QueryContext(ctx, query)
+	rows, err := p.db.QueryContext(ctx, query, idsInterface...)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
@@ -445,15 +450,20 @@ func (p *PostgresRepository) GetUsersByIDs(ctx context.Context, ids []string) ([
 func (p *PostgresRepository) GetPostsByIDs(ctx context.Context, ids []string) ([]*models.Post, error) {
 	const op = "postgres.GetPostsByIDs"
 
-	params := p.GetParamsString(ids)
+	params := p.getParamsString(ids)
 
 	query := fmt.Sprintf(`SELECT id, author_id, title, content, allowed_comments, edited_at, created_at
        FROM posts
        WHERE id IN (%s)
        ORDER BY created_at DESC`, params)
 
+	idsInterface := make([]interface{}, len(ids))
+	for i, id := range ids {
+		idsInterface[i] = id
+	}
+
 	var err error
-	rows, err := p.db.QueryContext(ctx, query)
+	rows, err := p.db.QueryContext(ctx, query, idsInterface...)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
@@ -483,15 +493,20 @@ func (p *PostgresRepository) GetPostsByIDs(ctx context.Context, ids []string) ([
 func (p *PostgresRepository) GetCommentsByIDs(ctx context.Context, ids []string) ([]*models.Comment, error) {
 	const op = "postgres.GetCommentsByIDs"
 
-	params := p.GetParamsString(ids)
+	params := p.getParamsString(ids)
 
 	query := fmt.Sprintf(`SELECT id, post_id, parent_comment_id, author_id, text, created_at
        FROM comments
        WHERE id IN (%s)
        ORDER BY created_at DESC`, params)
 
+	idsInterface := make([]interface{}, len(ids))
+	for i, id := range ids {
+		idsInterface[i] = id
+	}
+
 	var err error
-	rows, err := p.db.QueryContext(ctx, query)
+	rows, err := p.db.QueryContext(ctx, query, idsInterface...)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
@@ -520,15 +535,20 @@ func (p *PostgresRepository) GetCommentsByIDs(ctx context.Context, ids []string)
 func (p *PostgresRepository) GetCommentsByPostIDs(ctx context.Context, ids []string) ([]*models.Comment, error) {
 	const op = "postgres.GetCommentsByPostIDs"
 
-	params := p.GetParamsString(ids)
+	params := p.getParamsString(ids)
 
 	query := fmt.Sprintf(`SELECT id, post_id, parent_comment_id, author_id, text, created_at
        FROM comments
        WHERE post_id IN (%s) AND parent_comment_id IS NULL
        ORDER BY created_at DESC`, params)
 
+	idsInterface := make([]interface{}, len(ids))
+	for i, id := range ids {
+		idsInterface[i] = id
+	}
+
 	var err error
-	rows, err := p.db.QueryContext(ctx, query)
+	rows, err := p.db.QueryContext(ctx, query, idsInterface...)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
@@ -557,15 +577,20 @@ func (p *PostgresRepository) GetCommentsByPostIDs(ctx context.Context, ids []str
 func (p *PostgresRepository) GetCommentsByAuthorIDs(ctx context.Context, ids []string) ([]*models.Comment, error) {
 	const op = "postgres.GetCommentsByAuthorIDs"
 
-	params := p.GetParamsString(ids)
+	params := p.getParamsString(ids)
 
 	query := fmt.Sprintf(`SELECT id, post_id, parent_comment_id, author_id, text, created_at
        FROM comments
        WHERE author_id IN (%s)
        ORDER BY created_at DESC`, params)
 
+	idsInterface := make([]interface{}, len(ids))
+	for i, id := range ids {
+		idsInterface[i] = id
+	}
+
 	var err error
-	rows, err := p.db.QueryContext(ctx, query)
+	rows, err := p.db.QueryContext(ctx, query, idsInterface...)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
@@ -594,15 +619,20 @@ func (p *PostgresRepository) GetCommentsByAuthorIDs(ctx context.Context, ids []s
 func (p *PostgresRepository) GetCommentsByParentIDs(ctx context.Context, ids []string) ([]*models.Comment, error) {
 	const op = "postgres.GetCommentsByParentIDs"
 
-	params := p.GetParamsString(ids)
+	params := p.getParamsString(ids)
 
 	query := fmt.Sprintf(`SELECT id, post_id, parent_comment_id, author_id, text, created_at
        FROM comments
        WHERE parent_comment_id IN (%s)
        ORDER BY created_at DESC`, params)
 
+	idsInterface := make([]interface{}, len(ids))
+	for i, id := range ids {
+		idsInterface[i] = id
+	}
+
 	var err error
-	rows, err := p.db.QueryContext(ctx, query)
+	rows, err := p.db.QueryContext(ctx, query, idsInterface...)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
